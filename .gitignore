@@ -62,8 +62,8 @@ objectbox-model.json.bak
 coverage/
 *.lcov
 
-# Generated
-*.g.dart
+# Generated (not using freezed/json_serializable, so no .g.dart to ignore)
+# objectbox.g.dart MUST be committed — app won't run without it
 *.freezed.dart
 
 # Environment
