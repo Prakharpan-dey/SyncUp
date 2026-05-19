@@ -29,6 +29,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authViewModelProvider);
+    final isLoading = authState.status == AuthStatus.loading;
 
     ref.listen(authViewModelProvider, (prev, next) {
       if (next.status == AuthStatus.authenticated) {
@@ -64,6 +65,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   ),
                   validator: Validators.displayName,
                   textCapitalization: TextCapitalization.words,
+                  enabled: !isLoading,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -73,6 +75,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     prefixIcon: Icon(Icons.alternate_email),
                   ),
                   validator: Validators.username,
+                  enabled: !isLoading,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -83,6 +86,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   ),
                   validator: Validators.email,
                   keyboardType: TextInputType.emailAddress,
+                  enabled: !isLoading,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -93,6 +97,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   ),
                   validator: Validators.password,
                   obscureText: true,
+                  enabled: !isLoading,
                 ),
                 if (authState.error != null) ...[
                   const SizedBox(height: 12),
@@ -141,7 +146,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   children: [
                     const Text('Already have an account?'),
                     TextButton(
-                      onPressed: () => context.go('/auth/sign-in'),
+                      onPressed: isLoading
+                          ? null
+                          : () => context.go('/auth/sign-in'),
                       child: const Text('Sign In'),
                     ),
                   ],

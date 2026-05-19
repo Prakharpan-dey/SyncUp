@@ -25,6 +25,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authViewModelProvider);
+    final isLoading = authState.status == AuthStatus.loading;
 
     ref.listen(authViewModelProvider, (prev, next) {
       if (next.status == AuthStatus.authenticated) {
@@ -64,6 +65,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   ),
                   validator: Validators.email,
                   keyboardType: TextInputType.emailAddress,
+                  enabled: !isLoading,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -74,6 +76,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   ),
                   validator: Validators.password,
                   obscureText: true,
+                  enabled: !isLoading,
                 ),
                 if (authState.error != null) ...[
                   const SizedBox(height: 12),
@@ -119,7 +122,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   children: [
                     const Text("Don't have an account?"),
                     TextButton(
-                      onPressed: () => context.go('/auth/sign-up'),
+                      onPressed: isLoading
+                          ? null
+                          : () => context.go('/auth/sign-up'),
                       child: const Text('Sign Up'),
                     ),
                   ],
