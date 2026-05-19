@@ -16,6 +16,13 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   final _passwordCtrl = TextEditingController();
 
   @override
+  void dispose() {
+    _emailCtrl.dispose();
+    _passwordCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authViewModelProvider);
 

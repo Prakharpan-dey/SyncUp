@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../features/auth/presentation/screens/sign_in_screen.dart';
+import '../../features/auth/presentation/screens/sign_up_screen.dart';
+import '../../features/auth/presentation/screens/email_verification_screen.dart';
 import 'route_names.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -10,18 +13,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/auth/sign-in',
         name: RouteNames.signIn,
-        builder: (ctx, state) =>
-            const Placeholder(), // replace with SignInScreen
+        builder: (ctx, state) => const SignInScreen(),
       ),
       GoRoute(
         path: '/auth/sign-up',
         name: RouteNames.signUp,
-        builder: (ctx, state) => const Placeholder(),
+        builder: (ctx, state) => const SignUpScreen(),
       ),
       GoRoute(
         path: '/auth/verify-email',
         name: RouteNames.verifyEmail,
-        builder: (ctx, state) => const Placeholder(),
+        builder: (ctx, state) => const EmailVerificationScreen(),
       ),
       GoRoute(
         path: '/onboarding',

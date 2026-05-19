@@ -61,4 +61,19 @@ class UserDto {
     privacySearchable: privacySearchable,
     privacySharingDefault: privacySharingDefault,
   );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'username': username,
+    'display_name': displayName,
+    'email': email,
+    'email_verified_at': emailVerifiedAt,
+    'photo_url': photoUrl,
+    'college': college,
+    'department': department,
+    'semester': semester,
+    'graduation_year': graduationYear,
+    'privacy_searchable': privacySearchable,
+    'privacy_sharing_default': privacySharingDefault,
+  };
 }
