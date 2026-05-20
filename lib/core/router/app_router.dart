@@ -4,11 +4,14 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/screens/sign_in_screen.dart';
 import '../../features/auth/presentation/screens/sign_up_screen.dart';
 import '../../features/auth/presentation/screens/email_verification_screen.dart';
+import '../../features/tasks/presentation/screens/task_list_screen.dart';
+import '../../features/tasks/presentation/screens/task_create_screen.dart';
+import '../../features/tasks/presentation/screens/task_detail_screen.dart';
 import 'route_names.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
-    initialLocation: '/auth/sign-in',
+    initialLocation: '/home', // TODO: change back to '/auth/sign-in' when backend is ready
     routes: [
       GoRoute(
         path: '/auth/sign-in',
@@ -79,17 +82,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/tasks',
                 name: RouteNames.tasks,
-                builder: (ctx, state) => const Placeholder(),
+                builder: (ctx, state) => const TaskListScreen(),
                 routes: [
-                  GoRoute(
-                    path: ':taskId',
-                    name: RouteNames.taskDetail,
-                    builder: (ctx, state) => const Placeholder(),
-                  ),
                   GoRoute(
                     path: 'new',
                     name: RouteNames.taskCreate,
-                    builder: (ctx, state) => const Placeholder(),
+                    builder: (ctx, state) => const TaskCreateScreen(),
+                  ),
+                  GoRoute(
+                    path: ':taskId',
+                    name: RouteNames.taskDetail,
+                    builder: (ctx, state) => TaskDetailScreen(
+                      taskId: state.pathParameters['taskId']!,
+                    ),
                   ),
                 ],
               ),
