@@ -7,6 +7,9 @@ import '../../features/auth/presentation/screens/email_verification_screen.dart'
 import '../../features/tasks/presentation/screens/task_list_screen.dart';
 import '../../features/tasks/presentation/screens/task_create_screen.dart';
 import '../../features/tasks/presentation/screens/task_detail_screen.dart';
+import '../../features/attendance/presentation/screens/subject_list_screen.dart';
+import '../../features/attendance/presentation/screens/subject_detail_screen.dart';
+import '../../features/attendance/presentation/screens/subject_create_screen.dart';
 import 'route_names.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -105,12 +108,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/attendance',
                 name: RouteNames.attendance,
-                builder: (ctx, state) => const Placeholder(),
+                builder: (ctx, state) => const SubjectListScreen(),
                 routes: [
+                  GoRoute(
+                    path: 'new',
+                    name: RouteNames.subjectCreate,
+                    builder: (ctx, state) => const SubjectCreateScreen(),
+                  ),
                   GoRoute(
                     path: ':subjectId',
                     name: RouteNames.subjectDetail,
-                    builder: (ctx, state) => const Placeholder(),
+                    builder: (ctx, state) => SubjectDetailScreen(
+                      subjectId: state.pathParameters['subjectId']!,
+                    ),
                   ),
                 ],
               ),

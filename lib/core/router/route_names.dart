@@ -10,6 +10,7 @@ class RouteNames {
   static const taskCreate = 'task-create';
   static const attendance = 'attendance';
   static const subjectDetail = 'subject-detail';
+  static const subjectCreate = 'subject-create';
   static const feed = 'feed';
   static const profile = 'profile';
   static const notifications = 'notifications';
