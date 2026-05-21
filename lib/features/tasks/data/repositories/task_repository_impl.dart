@@ -19,7 +19,7 @@ class TaskRepositoryImpl implements TaskRepository {
   TaskRepositoryImpl(
       this._remote, this._store, this._syncManager, this._connectivity);
 
-  // ── helpers ────────────────────────────────────────────────────────────
+  // helpers
 
   Box<TaskOB> get _box => _store.box<TaskOB>();
 
@@ -100,7 +100,7 @@ class TaskRepositoryImpl implements TaskRepository {
     }();
   }
 
-  // ── interface methods ──────────────────────────────────────────────────
+  // interface methods 
 
   @override
   Future<Either<Failure, Task>> createTask(Task task) async {
