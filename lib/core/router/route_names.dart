@@ -12,6 +12,10 @@ class RouteNames {
   static const subjectDetail = 'subject-detail';
   static const subjectCreate = 'subject-create';
   static const feed = 'feed';
+  static const searchUsers = 'search-users';
+  static const friendRequests = 'friend-requests';
+  static const groups = 'groups';
+  static const groupDetail = 'group-detail';
   static const profile = 'profile';
   static const notifications = 'notifications';
   static const groupJoin = 'group-join';

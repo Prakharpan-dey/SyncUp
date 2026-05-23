@@ -10,6 +10,11 @@ import '../../features/tasks/presentation/screens/task_detail_screen.dart';
 import '../../features/attendance/presentation/screens/subject_list_screen.dart';
 import '../../features/attendance/presentation/screens/subject_detail_screen.dart';
 import '../../features/attendance/presentation/screens/subject_create_screen.dart';
+import '../../features/feed/presentation/screens/feed_screen.dart';
+import '../../features/social/presentation/screens/search_users_screen.dart';
+import '../../features/social/presentation/screens/friend_requests_screen.dart';
+import '../../features/social/presentation/screens/group_list_screen.dart';
+import '../../features/social/presentation/screens/group_detail_screen.dart';
 import 'route_names.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -131,7 +136,33 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/feed',
                 name: RouteNames.feed,
-                builder: (ctx, state) => const Placeholder(),
+                builder: (ctx, state) => const FeedScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'search',
+                    name: RouteNames.searchUsers,
+                    builder: (ctx, state) => const SearchUsersScreen(),
+                  ),
+                  GoRoute(
+                    path: 'friends',
+                    name: RouteNames.friendRequests,
+                    builder: (ctx, state) => const FriendRequestsScreen(),
+                  ),
+                  GoRoute(
+                    path: 'groups',
+                    name: RouteNames.groups,
+                    builder: (ctx, state) => const GroupListScreen(),
+                    routes: [
+                      GoRoute(
+                        path: ':groupId',
+                        name: RouteNames.groupDetail,
+                        builder: (ctx, state) => GroupDetailScreen(
+                          groupId: state.pathParameters['groupId']!,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),
