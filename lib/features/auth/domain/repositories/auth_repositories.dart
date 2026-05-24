@@ -16,5 +16,6 @@ abstract interface class AuthRepository {
   Future<Either<Failure, User>> signInWithGoogle();
   Future<Either<Failure, void>> logout();
   Future<Either<Failure, void>> deleteAccount();
+  Future<Either<Failure, User>> updateProfile(Map<String, dynamic> fields);
   Future<Either<Failure, User?>> getCurrentUser();
 }

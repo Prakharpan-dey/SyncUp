@@ -154,6 +154,18 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Either<Failure, User>> updateProfile(Map<String, dynamic> fields) async {
+    try {
+      final data = await _remote.updateProfile(fields);
+      return Right(UserDto.fromJson(data['user']).toDomain());
+    } on DioException catch (e) {
+      return Left(ErrorMapper.fromDioException(e));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, User?>> getCurrentUser() async {
     try {
       final token = await _storage.read(key: 'access_token');

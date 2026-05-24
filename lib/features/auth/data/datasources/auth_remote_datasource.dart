@@ -50,4 +50,9 @@ class AuthRemoteDataSource {
     final res = await _dio.get('/auth/me');
     return res.data as Map<String, dynamic>;
   }
+
+  Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> fields) async {
+    final res = await _dio.patch('/users/me', data: fields);
+    return res.data as Map<String, dynamic>;
+  }
 }

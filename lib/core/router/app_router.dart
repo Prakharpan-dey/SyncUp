@@ -15,6 +15,14 @@ import '../../features/social/presentation/screens/search_users_screen.dart';
 import '../../features/social/presentation/screens/friend_requests_screen.dart';
 import '../../features/social/presentation/screens/group_list_screen.dart';
 import '../../features/social/presentation/screens/group_detail_screen.dart';
+import '../../features/notifications/presentation/screens/notification_centre_screen.dart';
+import '../../features/onboarding/presentation/screens/display_name_screen.dart';
+import '../../features/onboarding/presentation/screens/privacy_setup_screen.dart';
+import '../../features/profile/presentation/screens/profile_screen.dart';
+import '../../features/profile/presentation/screens/privacy_settings_screen.dart';
+import '../../features/profile/presentation/screens/notification_preferences_screen.dart';
+import '../../features/profile/presentation/screens/delete_account_screen.dart';
+import '../widgets/offline_banner.dart';
 import 'route_names.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -36,17 +44,31 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: RouteNames.verifyEmail,
         builder: (ctx, state) => const EmailVerificationScreen(),
       ),
+
+      // Onboarding flow
       GoRoute(
         path: '/onboarding',
         name: RouteNames.onboarding,
-        builder: (ctx, state) => const Placeholder(),
+        builder: (ctx, state) => const DisplayNameScreen(),
+        routes: [
+          GoRoute(
+            path: 'privacy',
+            name: RouteNames.privacySetup,
+            builder: (ctx, state) => const PrivacySetupScreen(),
+          ),
+        ],
       ),
 
-      // Main App Shell with bottom nav
+      // Main App Shell with bottom nav + offline banner
       StatefulShellRoute.indexedStack(
         builder: (ctx, state, navigationShell) {
           return Scaffold(
-            body: navigationShell,
+            body: Column(
+              children: [
+                const OfflineBanner(),
+                Expanded(child: navigationShell),
+              ],
+            ),
             bottomNavigationBar: NavigationBar(
               selectedIndex: navigationShell.currentIndex,
               onDestinationSelected: navigationShell.goBranch,
@@ -171,7 +193,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/profile',
                 name: RouteNames.profile,
-                builder: (ctx, state) => const Placeholder(),
+                builder: (ctx, state) => const ProfileScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'privacy',
+                    name: RouteNames.privacySettings,
+                    builder: (ctx, state) => const PrivacySettingsScreen(),
+                  ),
+                  GoRoute(
+                    path: 'notification-prefs',
+                    name: RouteNames.notificationPrefs,
+                    builder: (ctx, state) =>
+                        const NotificationPreferencesScreen(),
+                  ),
+                  GoRoute(
+                    path: 'delete-account',
+                    name: RouteNames.deleteAccount,
+                    builder: (ctx, state) => const DeleteAccountScreen(),
+                  ),
+                ],
               ),
             ],
           ),
@@ -181,7 +221,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/notifications',
         name: RouteNames.notifications,
-        builder: (ctx, state) => const Placeholder(),
+        builder: (ctx, state) => const NotificationCentreScreen(),
       ),
       GoRoute(
         path: '/groups/join/:token',

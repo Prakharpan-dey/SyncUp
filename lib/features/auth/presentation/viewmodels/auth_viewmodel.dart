@@ -102,6 +102,40 @@ class AuthViewModel extends Notifier<AuthState> {
       },
     );
   }
+
+  Future<bool> deleteAccount() async {
+    state = state.copyWith(status: AuthStatus.loading, error: null);
+    final result = await ref.read(deleteAccountUseCaseProvider)();
+    return result.fold(
+      (f) {
+        state = state.copyWith(
+          status: AuthStatus.authenticated,
+          error: f.message,
+        );
+        return false;
+      },
+      (_) {
+        state = const AuthState(status: AuthStatus.unauthenticated);
+        return true;
+      },
+    );
+  }
+
+  Future<bool> updateProfile(Map<String, dynamic> fields) async {
+    state = state.copyWith(error: null);
+    final result =
+        await ref.read(authRepositoryProvider).updateProfile(fields);
+    return result.fold(
+      (f) {
+        state = state.copyWith(error: f.message);
+        return false;
+      },
+      (user) {
+        state = state.copyWith(user: user);
+        return true;
+      },
+    );
+  }
 }
 
 // Manual provider registration

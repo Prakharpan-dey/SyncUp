@@ -4,6 +4,8 @@ class RouteNames {
   static const verifyEmail = 'verify-email';
   static const forgotPassword = 'forgot-password';
   static const onboarding = 'onboarding';
+  static const displayName = 'display-name';
+  static const privacySetup = 'privacy-setup';
   static const home = 'home';
   static const tasks = 'tasks';
   static const taskDetail = 'task-detail';
@@ -17,6 +19,10 @@ class RouteNames {
   static const groups = 'groups';
   static const groupDetail = 'group-detail';
   static const profile = 'profile';
+  static const privacySettings = 'privacy-settings';
+  static const notificationPrefs = 'notification-prefs';
+  static const deleteAccount = 'delete-account';
   static const notifications = 'notifications';
   static const groupJoin = 'group-join';
 }
+
