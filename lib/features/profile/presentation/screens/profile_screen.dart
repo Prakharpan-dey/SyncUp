@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/di/core_providers.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
 
@@ -233,6 +234,13 @@ class ProfileScreen extends ConsumerWidget {
           ),
           FilledButton(
             onPressed: () async {
+              if (!ref.read(connectivityServiceProvider).isOnline) {
+                if (ctx.mounted) Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('You are offline. Connect to save.')),
+                );
+                return;
+              }
               final fields = <String, dynamic>{};
               if (nameCtrl.text.trim().isNotEmpty) {
                 fields['display_name'] = nameCtrl.text.trim();

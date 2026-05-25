@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/di/core_providers.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
 
@@ -94,6 +95,14 @@ class _PrivacySettingsScreenState extends ConsumerState<PrivacySettingsScreen> {
   }
 
   Future<void> _save() async {
+    if (!ref.read(connectivityServiceProvider).isOnline) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('You are offline. Connect to save.')),
+        );
+      }
+      return;
+    }
     setState(() => _saving = true);
     final success = await ref.read(authViewModelProvider.notifier).updateProfile({
       'privacy_searchable': _searchable,
