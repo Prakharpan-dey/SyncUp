@@ -20,11 +20,10 @@ class FeedRemoteDataSource {
     return res.data as Map<String, dynamic>;
   }
 
-  Future<void> react(String feedItemId, String emoji) async {
-    await _dio.post('/feed/$feedItemId/react', data: {'emoji': emoji});
-  }
-
-  Future<void> comment(String feedItemId, String text) async {
-    await _dio.post('/feed/$feedItemId/comment', data: {'text': text});
+  /// Toggles this user's reaction. Returns the server's resulting state.
+  Future<Map<String, dynamic>> react(String feedItemId, String emoji) async {
+    final res =
+        await _dio.post('/feed/$feedItemId/react', data: {'emoji': emoji});
+    return Map<String, dynamic>.from(res.data as Map);
   }
 }

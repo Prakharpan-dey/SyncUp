@@ -6,7 +6,7 @@ class ReactToFeedUseCase {
   final FeedRepository _repo;
   ReactToFeedUseCase(this._repo);
 
-  Future<Either<Failure, void>> call(String feedItemId, String emoji) {
+  Future<Either<Failure, ({bool reacted, int count})>> call(String feedItemId, String emoji) {
     if (emoji.trim().isEmpty) {
       return Future.value(
           const Left(ValidationFailure('Reaction cannot be empty')));

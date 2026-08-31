@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/neo_brutalism.dart';
+import '../../../../core/widgets/user_avatar.dart';
 import '../../domain/entities/feed_item.dart';
 
 class FeedItemCard extends StatelessWidget {
   final FeedItem item;
   final VoidCallback? onReact;
-  final ValueChanged<String>? onComment;
 
   const FeedItemCard({
     super.key,
     required this.item,
     this.onReact,
-    this.onComment,
   });
 
   IconData get _typeIcon {
@@ -51,37 +51,19 @@ class FeedItemCard extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? AppColors.borderDark : AppColors.border,
-        ),
-      ),
+      decoration: NeoBrutalism.cardDecoration(isDark: isDark),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Actor row
           Row(
             children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: _typeColor.withValues(alpha: 0.12),
-                backgroundImage: item.actorPhotoUrl != null
-                    ? NetworkImage(item.actorPhotoUrl!)
-                    : null,
-                child: item.actorPhotoUrl == null
-                    ? Text(
-                        item.actorName.isNotEmpty
-                            ? item.actorName[0].toUpperCase()
-                            : '?',
-                        style: TextStyle(
-                          color: _typeColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      )
-                    : null,
+              // Keyed on the actor's id, so the same person is the same colour
+              // on every card and for every viewer.
+              UserAvatar(
+                seed: item.actorId,
+                displayName: item.actorName,
+                size: 40,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -91,15 +73,17 @@ class FeedItemCard extends StatelessWidget {
                     Text(
                       item.actorName,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w700,
                           ),
                     ),
                     Text(
-                      _timeAgo,
+                      _timeAgo.toUpperCase(),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: isDark
                                 ? AppColors.textSecondaryDark
                                 : AppColors.textSecondary,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
                           ),
                     ),
                   ],
@@ -109,11 +93,11 @@ class FeedItemCard extends StatelessWidget {
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _typeColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                decoration: NeoBrutalism.chipDecoration(
+                  color: _typeColor,
+                  isDark: isDark,
                 ),
-                child: Icon(_typeIcon, size: 16, color: _typeColor),
+                child: Icon(_typeIcon, size: 16, color: Colors.black),
               ),
             ],
           ),
@@ -123,11 +107,11 @@ class FeedItemCard extends StatelessWidget {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
+            decoration: NeoBrutalism.flatCardDecoration(
               color: isDark
                   ? AppColors.surfaceVariantDark
                   : AppColors.surfaceVariant,
-              borderRadius: BorderRadius.circular(12),
+              isDark: isDark,
             ),
             child: Row(
               children: [
@@ -139,9 +123,13 @@ class FeedItemCard extends StatelessWidget {
                       children: [
                         TextSpan(
                           text: item.actorName,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
+                          style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
-                        TextSpan(text: ' ${item.summary}'),
+                        TextSpan(
+                          text: item.title.isNotEmpty
+                              ? ' ${item.title}'
+                              : ' ${item.fallbackSummary}',
+                        ),
                       ],
                     ),
                     style: Theme.of(context).textTheme.bodyMedium,
@@ -152,41 +140,57 @@ class FeedItemCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          // Action bar: reactions + comments
+          // Action bar
           Row(
             children: [
               // Reactions
-              _ActionButton(
-                icon: Icons.favorite_border_rounded,
-                label: item.reactionCount > 0
-                    ? '${item.reactionCount}'
-                    : 'React',
+              // Always a count, never the word "REACT": the label swapping
+              // between a word and a digit changed the chip's width by ~50px,
+              // which was enough to ellipsise the group name on unreacted
+              // cards while showing it in full on the rest.
+              _ActionChip(
+                icon: item.reacted
+                    ? Icons.favorite_rounded
+                    : Icons.favorite_border_rounded,
+                label: '${item.reactionCount}',
                 onTap: onReact,
               ),
-              const SizedBox(width: 16),
-              // Comments
-              _ActionButton(
-                icon: Icons.chat_bubble_outline_rounded,
-                label: item.commentCount > 0
-                    ? '${item.commentCount}'
-                    : 'Comment',
-                onTap: () {
-                  if (onComment != null) {
-                    _showCommentDialog(context);
-                  }
-                },
-              ),
               const Spacer(),
-              // Visibility
-              Icon(
-                item.visibility == FeedVisibility.group
-                    ? Icons.group_rounded
-                    : Icons.people_rounded,
-                size: 14,
-                color: isDark
-                    ? AppColors.textSecondaryDark
-                    : AppColors.textTertiary,
-              ),
+              // Which group this arrived through, in the corner opposite the
+              // react control. Ellipsised rather than wrapped: a long group
+              // name should not grow the card.
+              if (item.isGroupItem && item.groupName != null)
+                Flexible(
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: NeoBrutalism.chipDecoration(
+                      color: AppColors.accent,
+                      isDark: isDark,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.groups_rounded,
+                            size: 12, color: Colors.black),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            item.groupName!,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall
+                                ?.copyWith(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
             ],
           ),
         ],
@@ -194,46 +198,14 @@ class FeedItemCard extends StatelessWidget {
     );
   }
 
-  void _showCommentDialog(BuildContext context) {
-    final ctrl = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Add Comment'),
-        content: TextField(
-          controller: ctrl,
-          decoration: const InputDecoration(
-            hintText: 'Write a comment...',
-          ),
-          maxLines: 3,
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (ctrl.text.trim().isNotEmpty) {
-                onComment?.call(ctrl.text.trim());
-                Navigator.pop(ctx);
-              }
-            },
-            child: const Text('Post'),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
-class _ActionButton extends StatelessWidget {
+class _ActionChip extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback? onTap;
 
-  const _ActionButton({
+  const _ActionChip({
     required this.icon,
     required this.label,
     this.onTap,
@@ -243,15 +215,18 @@ class _ActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: NeoBrutalism.chipDecoration(
+          color: isDark ? AppColors.surfaceDark : AppColors.surface,
+          isDark: isDark,
+        ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 18,
+            Icon(icon, size: 16,
                 color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary),
             const SizedBox(width: 4),
             Text(
@@ -260,6 +235,8 @@ class _ActionButton extends StatelessWidget {
                     color: isDark
                         ? AppColors.textSecondaryDark
                         : AppColors.textSecondary,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
                   ),
             ),
           ],

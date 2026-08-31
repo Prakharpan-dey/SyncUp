@@ -10,6 +10,7 @@ abstract interface class FeedRepository {
     int limit = 20,
   });
 
-  Future<Either<Failure, void>> react(String feedItemId, String emoji);
-  Future<Either<Failure, void>> comment(String feedItemId, String text);
+  /// Toggles this user's reaction, returning (reacted, count) as recorded.
+  Future<Either<Failure, ({bool reacted, int count})>> react(
+      String feedItemId, String emoji);
 }

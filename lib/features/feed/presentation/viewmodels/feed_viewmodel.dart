@@ -86,36 +86,21 @@ class FeedViewModel extends Notifier<FeedState> {
     await loadFeed(tab: tab);
   }
 
-  /// React to a feed item with an emoji.
+  /// Toggles this user's reaction on an item.
+  ///
+  /// The count comes back from the server rather than being incremented here:
+  /// reacting is now one-per-user and tapping again removes it, so a local
+  /// guess would drift the moment anyone toggled.
   Future<void> reactToItem(String feedItemId, String emoji) async {
     final result = await ref.read(reactToFeedUseCaseProvider)(feedItemId, emoji);
     result.fold(
       (f) => state = state.copyWith(error: f.message),
-      (_) {
-        final updated = state.items.map((item) {
-          if (item.id == feedItemId) {
-            return item.copyWith(reactionCount: item.reactionCount + 1);
-          }
-          return item;
-        }).toList();
-        state = state.copyWith(items: updated);
-      },
-    );
-  }
-
-  /// Comment on a feed item.
-  Future<void> commentOnItem(String feedItemId, String text) async {
-    final result =
-        await ref.read(commentOnFeedUseCaseProvider)(feedItemId, text);
-    result.fold(
-      (f) => state = state.copyWith(error: f.message),
-      (_) {
-        final updated = state.items.map((item) {
-          if (item.id == feedItemId) {
-            return item.copyWith(commentCount: item.commentCount + 1);
-          }
-          return item;
-        }).toList();
+      (r) {
+        final updated = state.items
+            .map((item) => item.id == feedItemId
+                ? item.copyWith(reactionCount: r.count, reacted: r.reacted)
+                : item)
+            .toList();
         state = state.copyWith(items: updated);
       },
     );

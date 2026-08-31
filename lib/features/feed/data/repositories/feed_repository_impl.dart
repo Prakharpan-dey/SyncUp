@@ -67,30 +67,18 @@ class FeedRepositoryImpl implements FeedRepository {
   }
 
   @override
-  Future<Either<Failure, void>> react(
+  Future<Either<Failure, ({bool reacted, int count})>> react(
       String feedItemId, String emoji) async {
     if (!_connectivity.isOnline) {
       return const Left(
           NetworkFailure('Connect to the internet to react'));
     }
     try {
-      await _remote.react(feedItemId, emoji);
-      return const Right(null);
-    } catch (e) {
-      return Left(_mapError(e));
-    }
-  }
-
-  @override
-  Future<Either<Failure, void>> comment(
-      String feedItemId, String text) async {
-    if (!_connectivity.isOnline) {
-      return const Left(
-          NetworkFailure('Connect to the internet to comment'));
-    }
-    try {
-      await _remote.comment(feedItemId, text);
-      return const Right(null);
+      final data = await _remote.react(feedItemId, emoji);
+      return Right((
+        reacted: data['reacted'] as bool? ?? true,
+        count: data['reaction_count'] as int? ?? 0,
+      ));
     } catch (e) {
       return Left(_mapError(e));
     }

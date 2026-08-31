@@ -5,7 +5,6 @@ import '../data/repositories/feed_repository_impl.dart';
 import '../domain/repositories/feed_repository.dart';
 import '../domain/usecases/get_feed_usecase.dart';
 import '../domain/usecases/react_to_feed_usecase.dart';
-import '../domain/usecases/comment_on_feed_usecase.dart';
 
 final feedRemoteDataSourceProvider = Provider((ref) =>
     FeedRemoteDataSource(ref.watch(dioClientProvider).dio));
@@ -21,6 +20,3 @@ final getFeedUseCaseProvider = Provider((ref) =>
 
 final reactToFeedUseCaseProvider = Provider((ref) =>
     ReactToFeedUseCase(ref.watch(feedRepositoryProvider)));
-
-final commentOnFeedUseCaseProvider = Provider((ref) =>
-    CommentOnFeedUseCase(ref.watch(feedRepositoryProvider)));

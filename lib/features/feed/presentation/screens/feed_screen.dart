@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/neo_brutalism.dart';
 import '../viewmodels/feed_viewmodel.dart';
 import '../widgets/feed_item_card.dart';
 
@@ -57,9 +58,12 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Feed',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          'FEED',
+          style: TextStyle(
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.2,
+          ),
         ),
         actions: [
           IconButton(
@@ -81,8 +85,8 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
         bottom: TabBar(
           controller: _tabCtrl,
           tabs: const [
-            Tab(text: 'Friends'),
-            Tab(text: 'Groups'),
+            Tab(text: 'FRIENDS'),
+            Tab(text: 'GROUPS'),
           ],
         ),
       ),
@@ -94,23 +98,21 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
               width: double.infinity,
               margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.warning.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                    color: AppColors.warning.withValues(alpha: 0.3)),
+              decoration: NeoBrutalism.bannerDecoration(
+                color: AppColors.warning,
+                isDark: isDark,
               ),
               child: Row(
                 children: [
                   const Icon(Icons.wifi_off_rounded,
-                      color: AppColors.warning, size: 20),
+                      color: Colors.black, size: 20),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       state.error!,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.warning,
-                            fontWeight: FontWeight.w500,
+                            color: Colors.black,
+                            fontWeight: FontWeight.w600,
                           ),
                     ),
                   ),
@@ -148,10 +150,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                             final item = state.items[index];
                             return FeedItemCard(
                               item: item,
-                              onReact: () =>
-                                  vm.reactToItem(item.id, '❤️'),
-                              onComment: (text) =>
-                                  vm.commentOnItem(item.id, text),
+                              onReact: () => vm.reactToItem(item.id, '❤️'),
                             );
                           },
                         ),
@@ -173,25 +172,28 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
             Container(
               width: 100,
               height: 100,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(24),
+              decoration: NeoBrutalism.iconBoxDecoration(
+                color: AppColors.primaryLight,
+                isDark: isDark,
               ),
               child: Icon(
                 tab == 'friends'
                     ? Icons.dynamic_feed_rounded
                     : Icons.groups_rounded,
                 size: 48,
-                color: AppColors.primary.withValues(alpha: 0.6),
+                color: Colors.black,
               ),
             ),
             const SizedBox(height: 24),
             Text(
-              'No activity yet',
+              'NO ACTIVITY YET',
               style: Theme.of(context)
                   .textTheme
                   .titleLarge
-                  ?.copyWith(fontWeight: FontWeight.bold),
+                  ?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.0,
+                  ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -207,9 +209,12 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: () => context.go('/feed/search'),
-              icon: const Icon(Icons.person_add_rounded),
-              label: const Text('Find Friends'),
+              onPressed: () => context.go(
+                  tab == 'friends' ? '/feed/search' : '/feed/groups'),
+              icon: Icon(tab == 'friends'
+                  ? Icons.person_add_rounded
+                  : Icons.groups_rounded),
+              label: Text(tab == 'friends' ? 'FIND FRIENDS' : 'YOUR GROUPS'),
             ),
           ],
         ),
