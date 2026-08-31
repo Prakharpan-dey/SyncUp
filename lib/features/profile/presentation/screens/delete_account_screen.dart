@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/di/core_providers.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/neo_brutalism.dart';
 import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
 
 class DeleteAccountScreen extends ConsumerStatefulWidget {
@@ -15,20 +16,26 @@ class DeleteAccountScreen extends ConsumerStatefulWidget {
 
 class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
   final _confirmCtrl = TextEditingController();
+  final _passwordCtrl = TextEditingController();
   bool _canDelete = false;
   bool _deleting = false;
 
   @override
   void initState() {
     super.initState();
-    _confirmCtrl.addListener(() {
-      setState(() => _canDelete = _confirmCtrl.text == 'DELETE');
-    });
+    void update() {
+      setState(() => _canDelete =
+          _confirmCtrl.text == 'DELETE' && _passwordCtrl.text.isNotEmpty);
+    }
+
+    _confirmCtrl.addListener(update);
+    _passwordCtrl.addListener(update);
   }
 
   @override
   void dispose() {
     _confirmCtrl.dispose();
+    _passwordCtrl.dispose();
     super.dispose();
   }
 
@@ -44,15 +51,17 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
       builder: (ctx) => AlertDialog(
         icon: const Icon(Icons.warning_rounded,
             size: 48, color: AppColors.error),
-        title: const Text('Are you absolutely sure?'),
+        title: const Text('ARE YOU ABSOLUTELY SURE?'),
         content: const Text(
-          'This action cannot be undone. All your tasks, attendance records, '
-          'and social connections will be permanently deleted within 24 hours.',
+          'This cannot be undone. Your tasks, attendance records, friends and '
+          'group memberships are deleted immediately.\n\n'
+          'Your email address and username become available again, so you can '
+          'sign up fresh later if you change your mind.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: const Text('CANCEL'),
           ),
           FilledButton(
             onPressed: () async {
@@ -60,7 +69,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
               setState(() => _deleting = true);
               final success = await ref
                   .read(authViewModelProvider.notifier)
-                  .deleteAccount();
+                  .deleteAccount(_passwordCtrl.text);
               if (mounted) {
                 setState(() => _deleting = false);
                 if (success) {
@@ -78,7 +87,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.error,
             ),
-            child: const Text('Delete Forever'),
+            child: const Text('DELETE FOREVER'),
           ),
         ],
       ),
@@ -91,8 +100,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Delete Account',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('DELETE ACCOUNT'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(24),
@@ -102,12 +110,9 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
+              decoration: NeoBrutalism.bannerDecoration(
                 color: AppColors.error.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: AppColors.error.withValues(alpha: 0.2),
-                ),
+                isDark: isDark,
               ),
               child: Column(
                 children: [
@@ -115,10 +120,11 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
                       size: 48, color: AppColors.error),
                   const SizedBox(height: 16),
                   Text(
-                    'This is permanent',
+                    'THIS IS PERMANENT',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: AppColors.error,
+                          letterSpacing: 1.0,
                         ),
                   ),
                   const SizedBox(height: 8),
@@ -138,41 +144,60 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
             ),
             const SizedBox(height: 32),
             Text(
-              'Type DELETE to confirm',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600),
+              'TYPE DELETE TO CONFIRM',
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                  ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _confirmCtrl,
               enabled: !_deleting,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: 'Type DELETE here',
-                prefixIcon: const Icon(Icons.warning_amber_rounded),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                prefixIcon: Icon(Icons.warning_amber_rounded),
               ),
               textCapitalization: TextCapitalization.characters,
             ),
             const SizedBox(height: 8),
             Text(
-              _canDelete ? 'Confirmation matches' : 'Type "DELETE" exactly',
+              _confirmCtrl.text == 'DELETE'
+                  ? 'Confirmation matches'
+                  : 'Type "DELETE" exactly',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color:
-                        _canDelete ? AppColors.success : AppColors.textTertiary,
+                    color: _confirmCtrl.text == 'DELETE'
+                        ? AppColors.success
+                        : AppColors.textTertiary,
                   ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'CONFIRM YOUR PASSWORD',
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _passwordCtrl,
+              enabled: !_deleting,
+              obscureText: true,
+              decoration: const InputDecoration(
+                hintText: 'Your password',
+                prefixIcon: Icon(Icons.lock_outline_rounded),
+              ),
             ),
             const Spacer(),
             SizedBox(
               width: double.infinity,
               height: 52,
-              child: FilledButton(
+              child: ElevatedButton(
                 onPressed: _canDelete && !_deleting ? _confirmDelete : null,
-                style: FilledButton.styleFrom(
+                style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.error,
+                  foregroundColor: Colors.white,
                   disabledBackgroundColor:
                       AppColors.error.withValues(alpha: 0.3),
                 ),
@@ -182,7 +207,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
                         child: CircularProgressIndicator(
                           strokeWidth: 2, color: Colors.white),
                       )
-                    : const Text('Delete My Account'),
+                    : const Text('DELETE MY ACCOUNT'),
               ),
             ),
             const SizedBox(height: 16),

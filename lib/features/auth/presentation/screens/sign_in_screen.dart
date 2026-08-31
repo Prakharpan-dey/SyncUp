@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/neo_brutalism.dart';
 import '../../../../core/utils/validators.dart';
 import '../viewmodels/auth_viewmodel.dart';
 
@@ -26,20 +28,26 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authViewModelProvider);
     final isLoading = authState.status == AuthStatus.loading;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     ref.listen(authViewModelProvider, (prev, next) {
       if (next.status == AuthStatus.authenticated) {
-        if (next.user?.isEmailVerified == true) {
-          context.go('/home');
-        } else {
-          context.go('/auth/verify-email');
-        }
+        context.go('/home');
       }
     });
 
     return Scaffold(
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.background,
+      // Scrolls only when it has to. The Spacers still centre the form on a
+      // roomy screen, but once the keyboard takes half the viewport the content
+      // scrolls instead of overflowing.
       body: SafeArea(
-        child: Padding(
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(
+                child: Padding(
           padding: const EdgeInsets.all(24),
           child: Form(
             key: _formKey,
@@ -47,9 +55,22 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Spacer(),
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: NeoBrutalism.iconBoxDecoration(
+                    color: AppColors.primary,
+                    isDark: isDark,
+                  ),
+                  child: const Icon(Icons.login_rounded,
+                      size: 32, color: Colors.white),
+                ),
+                const SizedBox(height: 24),
                 Text(
-                  'Welcome back',
-                  style: Theme.of(context).textTheme.headlineLarge,
+                  'WELCOME BACK',
+                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                        letterSpacing: 1.5,
+                      ),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -80,10 +101,17 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 ),
                 if (authState.error != null) ...[
                   const SizedBox(height: 12),
-                  Text(
-                    authState.error!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: NeoBrutalism.bannerDecoration(
+                      color: AppColors.error.withValues(alpha: 0.15),
+                      isDark: isDark,
+                    ),
+                    child: Text(
+                      authState.error!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
                     ),
                   ),
                 ],
@@ -104,17 +132,29 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                           width: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Sign In'),
+                      : const Text('SIGN IN'),
                 ),
-                const SizedBox(height: 16),
-                OutlinedButton.icon(
-                  onPressed: authState.status == AuthStatus.loading
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: isLoading
+                        ? null
+                        : () => context.go('/auth/forgot-password'),
+                    child: const Text('Forgot password?'),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Local-only mode: tasks and attendance work with no account.
+                TextButton(
+                  onPressed: isLoading
                       ? null
-                      : () => ref
-                            .read(authViewModelProvider.notifier)
-                            .signInWithGoogle(),
-                  icon: const Icon(Icons.g_mobiledata),
-                  label: const Text('Sign in with Google'),
+                      : () async {
+                          await ref
+                              .read(authViewModelProvider.notifier)
+                              .enterGuestMode();
+                          if (context.mounted) context.go('/home');
+                        },
+                  child: const Text('CONTINUE WITHOUT AN ACCOUNT'),
                 ),
                 const Spacer(),
                 Row(
@@ -130,6 +170,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   ],
                 ),
               ],
+            ),
+          ),
+                ),
+              ),
             ),
           ),
         ),

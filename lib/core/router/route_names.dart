@@ -3,6 +3,9 @@ class RouteNames {
   static const signUp = 'sign-up';
   static const verifyEmail = 'verify-email';
   static const forgotPassword = 'forgot-password';
+  static const resetPassword = 'reset-password';
+  static const changePassword = 'change-password';
+  static const devices = 'devices';
   static const onboarding = 'onboarding';
   static const displayName = 'display-name';
   static const privacySetup = 'privacy-setup';
@@ -24,5 +27,6 @@ class RouteNames {
   static const deleteAccount = 'delete-account';
   static const notifications = 'notifications';
   static const groupJoin = 'group-join';
+  static const weeklyRecap = 'weekly-recap';
 }
 

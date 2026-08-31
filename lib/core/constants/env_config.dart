@@ -7,12 +7,6 @@ class EnvConfig {
     defaultValue: 'http://10.0.2.2:3000', // Android emulator → host machine
   );
 
-  /// Google OAuth web client ID (for google_sign_in)
-  static const String googleClientId = String.fromEnvironment(
-    'GOOGLE_CLIENT_ID',
-    defaultValue: '',
-  );
-
   /// Firebase project ID
   static const String firebaseProjectId = String.fromEnvironment(
     'FIREBASE_PROJECT_ID',

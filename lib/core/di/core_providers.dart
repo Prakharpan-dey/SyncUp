@@ -38,6 +38,8 @@ final syncManagerProvider = Provider<SyncManager>((ref) {
   final manager = SyncManager(
     ref.watch(objectBoxStoreProvider),
     ref.watch(connectivityServiceProvider),
+    ref.watch(dioClientProvider).dio,
+    ref.watch(secureStorageProvider),
   );
   ref.onDispose(() => manager.dispose());
   return manager;
