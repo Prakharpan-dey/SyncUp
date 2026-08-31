@@ -1,5 +1,15 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+import '../theme/app_colors.dart';
+
+/// The one channel SyncUp posts on, shared by local notifications and by the
+/// pushes FCM draws itself.
+///
+/// Must match `com.google.firebase.messaging.default_notification_channel_id`
+/// in AndroidManifest.xml. If the two drift apart, backgrounded pushes land on
+/// a separate system-generated channel and the user sees two SyncUp entries in
+/// notification settings.
+const _channelId = 'syncup_default';
 
 /// Core notification service wrapping flutter_local_notifications
 /// Can be extended with FCM once Firebase is fully configured
@@ -11,11 +21,17 @@ class NotificationService {
   final _plugin = FlutterLocalNotificationsPlugin();
   bool _initialized = false;
 
+  /// Invoked with a notification's payload when the user taps it.
+  ///
+  /// Set by PushService, which owns the router. Kept as a callback rather than
+  /// a direct navigation call so this service stays free of app dependencies.
+  void Function(String route)? onDeepLink;
+
   Future<void> initialize() async {
     if (_initialized) return;
 
     const androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('@drawable/ic_stat_syncup');
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
@@ -30,12 +46,28 @@ class NotificationService {
       onDidReceiveNotificationResponse: _onNotificationTapped,
     );
 
+    // Created up front, not on first post: FCM only files a backgrounded push
+    // on this channel if it already exists, and the first push can easily
+    // arrive before the app has ever shown a local notification.
+    await _plugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(
+          const AndroidNotificationChannel(
+            _channelId,
+            'SyncUp Notifications',
+            description: 'Task reminders, attendance warnings, and friend activity',
+            importance: Importance.high,
+          ),
+        );
+
     _initialized = true;
   }
 
   void _onNotificationTapped(NotificationResponse response) {
-    // Deep link payload handling — will be wired to GoRouter later
-    debugPrint('Notification tapped: ${response.payload}');
+    final payload = response.payload;
+    if (payload == null || payload.isEmpty) return;
+    onDeepLink?.call(payload);
   }
 
   /// Request notification permission (Android 13+, iOS)
@@ -73,11 +105,15 @@ class NotificationService {
     String? payload,
   }) async {
     const androidDetails = AndroidNotificationDetails(
-      'syncup_default',
+      _channelId,
       'SyncUp Notifications',
-      channelDescription: 'General notifications from SyncUp',
+      channelDescription:
+          'Task reminders, attendance warnings, and friend activity',
       importance: Importance.high,
       priority: Priority.high,
+      // Matches the accent FCM applies to pushes it draws itself, so a
+      // foreground notification and a backgrounded one look the same.
+      color: AppColors.primary,
     );
 
     await _plugin.show(

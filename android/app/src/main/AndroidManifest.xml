@@ -1,6 +1,17 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Network access. Previously declared only in the debug/profile variant
+         manifests, so release builds shipped with no internet at all. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+
+    <!-- Android 13+ runtime notification permission (FCM + local notifications). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+    <!-- Scheduled local notifications survive reboot. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+
     <application
-        android:label="syncup"
+        android:label="SyncUp"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -24,7 +35,52 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+
+            <!-- Custom-scheme deep links. Work without domain verification, so
+                 group invites and emailed auth links function immediately:
+                   syncup://groups/join/<token>
+                   syncup://auth/verify-email?token=<token>
+                   syncup://auth/reset-password?token=<token> -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="syncup" android:host="groups"/>
+                <data android:scheme="syncup" android:host="auth"/>
+            </intent-filter>
+
+            <!-- Verified App Links for the same routes over https. Requires
+                 assetlinks.json at https://syncup.app/.well-known/assetlinks.json
+                 before autoVerify succeeds; until then Android shows a chooser. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https" android:host="syncup.app"
+                      android:pathPrefix="/groups/join"/>
+                <data android:scheme="https" android:host="syncup.app"
+                      android:pathPrefix="/auth/verify-email"/>
+                <data android:scheme="https" android:host="syncup.app"
+                      android:pathPrefix="/auth/reset-password"/>
+            </intent-filter>
         </activity>
+        <!-- Presentation for pushes that FCM draws itself, i.e. every one that
+             arrives while the app is backgrounded or killed. Without these the
+             system uses the launcher icon (a white square once silhouetted) and
+             files the notification under a "Miscellaneous" channel separate
+             from the one foreground pushes use, so the two look unrelated and
+             cannot be muted together. The channel id must match the channel
+             NotificationService creates at startup. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_syncup" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/notification_color" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="syncup_default" />
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

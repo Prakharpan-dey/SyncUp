@@ -10,11 +10,21 @@ class NotificationPermissionHandler {
   final FlutterSecureStorage _storage;
   final NotificationService _notificationService;
 
+  /// Runs after permission is granted, to register this device for push.
+  ///
+  /// Injected as a callback rather than a `PushService` dependency: that
+  /// service reaches the auth repository, which would make this a cycle.
+  final Future<void> Function()? _onGranted;
+
   static const _keyFirstAction = 'has_completed_first_action';
   static const _keyPermissionAsked = 'notification_permission_asked';
   static const _keyPermissionGranted = 'notification_permission_granted';
 
-  NotificationPermissionHandler(this._storage, this._notificationService);
+  NotificationPermissionHandler(
+    this._storage,
+    this._notificationService, [
+    this._onGranted,
+  ]);
 
   /// Check if we should show the permission request
   Future<bool> shouldRequestPermission() async {
@@ -71,18 +81,25 @@ class NotificationPermissionHandler {
     await _storage.write(key: _keyPermissionAsked, value: 'true');
 
     if (shouldRequest == true) {
-      final granted = await _notificationService.requestPermission();
-      await _storage.write(
-          key: _keyPermissionGranted, value: granted.toString());
+      await _grantAndRegister();
     }
   }
 
   /// Manually request permission again (from settings/banner)
   Future<bool> requestPermissionManually() async {
-    final granted = await _notificationService.requestPermission();
-    await _storage.write(
-        key: _keyPermissionGranted, value: granted.toString());
+    final granted = await _grantAndRegister();
     await _storage.write(key: _keyPermissionAsked, value: 'true');
+    return granted;
+  }
+
+  /// Requests OS permission and, if granted, registers for push.
+  ///
+  /// Without the registration step the app would be allowed to show
+  /// notifications but the server would have no token to send them to.
+  Future<bool> _grantAndRegister() async {
+    final granted = await _notificationService.requestPermission();
+    await _storage.write(key: _keyPermissionGranted, value: granted.toString());
+    if (granted) await _onGranted?.call();
     return granted;
   }
 }
