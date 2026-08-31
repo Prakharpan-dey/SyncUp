@@ -1,0 +1,18 @@
+# Copy to `key.properties` (same directory) and fill in real values.
+# key.properties is gitignored — never commit it, and never commit the .jks.
+#
+# Generate the keystore first:
+#
+#   keytool -genkey -v -keystore C:\Users\<you>\syncup-release.jks \
+#     -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias syncup
+#
+# BACK UP THE .jks FILE AND THESE PASSWORDS. If you lose them you can never
+# publish an update to the app — Play will reject any build signed with a
+# different key, and there is no recovery process.
+
+storePassword=your-keystore-password
+keyPassword=your-key-password
+keyAlias=syncup
+# Absolute path, or relative to the android/app directory.
+# On Windows use forward slashes: C:/Users/you/syncup-release.jks
+storeFile=C:/Users/you/syncup-release.jks
