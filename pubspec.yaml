@@ -1,5 +1,5 @@
 name: syncup
-description: "A new Flutter project."
+description: "Track attendance, manage tasks, and stay in sync with your study group."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -54,10 +54,9 @@ dependencies:
   flutter_secure_storage: ^10.2.0
 
   # Auth
-  google_sign_in: ^7.2.0
 
   # Firebase
-  firebase_core: ^4.9.0
+  firebase_core: ^4.14.0
   firebase_messaging: ^16.2.2
   flutter_local_notifications: ^21.0.0
 
@@ -79,8 +78,8 @@ dependencies:
   equatable: ^2.0.8
   fpdart: ^1.2.0
   json_annotation: ^4.9.0
-  google_sign_in_android: ^7.2.10
-  google_sign_in_platform_interface: ^3.1.0
+  shared_preferences: ^2.5.5
+  device_info_plus: ^13.2.0
 
 dev_dependencies:
   flutter_test:
@@ -95,6 +94,19 @@ dev_dependencies:
   objectbox_generator: any
   mocktail: ^1.0.5
   build_runner: ^2.15.0
+  flutter_launcher_icons: ^0.14.4
+
+# Regenerate launcher icons after changing assets/icon/*:
+#   dart run flutter_launcher_icons
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/icon.png"
+  remove_alpha_ios: true
+  # Adaptive icon: the launcher masks the foreground to its own shape, so the
+  # mark is inset into the safe zone and the background is a flat brand color.
+  adaptive_icon_background: "#EDEDED"
+  adaptive_icon_foreground: "assets/icon/icon_foreground.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
