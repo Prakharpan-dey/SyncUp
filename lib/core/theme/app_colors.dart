@@ -10,26 +10,32 @@ class AppColors {
   static const accent = Color(0xFF00CEC9);
   static const accentLight = Color(0xFF81ECEC);
 
+  // Neobrutalism feature colors
+  static const yellow = Color(0xFFFDAA5D);
+  static const pink = Color(0xFFFF90BC);
+  static const lime = Color(0xFFC8F77E);
+
   // Semantic
   static const success = Color(0xFF00B894);
   static const warning = Color(0xFFFDAA5D);
   static const error = Color(0xFFFF6B6B);
-  static const info = Color(0xFF74B9FF);
+  static const info = Color(0xFF74C0FC);
 
   // Neutral (Light)
-  static const background = Color(0xFFF8F9FE);
+  static const background = Color(0xFFEDEDED);
   static const surface = Color(0xFFFFFFFF);
-  static const surfaceVariant = Color(0xFFF1F2F6);
-  static const textPrimary = Color(0xFF2D3436);
-  static const textSecondary = Color(0xFF636E72);
-  static const textTertiary = Color(0xFFB2BEC3);
-  static const border = Color(0xFFDFE6E9);
+  static const surfaceVariant = Color(0xFFEDEDED);
+  static const textPrimary = Color(0xFF000000);
+  static const textSecondary = Color(0xFF555555);
+  static const textTertiary = Color(0xFF888888);
+  static const border = Color(0xFF000000);
 
-  // Neutral (Dark)
-  static const backgroundDark = Color(0xFF0F0F1A);
-  static const surfaceDark = Color(0xFF1A1A2E);
-  static const surfaceVariantDark = Color(0xFF252540);
-  static const textPrimaryDark = Color(0xFFF5F6FA);
-  static const textSecondaryDark = Color(0xFFB2BEC3);
-  static const borderDark = Color(0xFF2D2D4A);
+  // Neutral (Dark) — inverted neobrutalism
+  static const backgroundDark = Color(0xFF101010);
+  static const surfaceDark = Color(0xFF1A1A1A);
+  static const surfaceVariantDark = Color(0xFF101010);
+  static const textPrimaryDark = Color(0xFFF0F0F0);
+  static const textSecondaryDark = Color(0xFF8A8A8A);
+  static const borderDark = Color(0xFFF0F0F0);
+  static const shadowDark = Color(0xFFF0F0F0);
 }
