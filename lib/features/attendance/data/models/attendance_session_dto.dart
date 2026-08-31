@@ -1,3 +1,4 @@
+import '../../../../core/utils/date_helpers.dart';
 import '../../domain/entities/attendance_session.dart';
 
 class AttendanceSessionDto {
@@ -48,7 +49,9 @@ class AttendanceSessionDto {
       AttendanceSessionDto(
         id: s.id,
         subjectId: s.subjectId,
-        sessionDate: s.sessionDate.toIso8601String(),
+        // Date-only: the API validates session_date as YYYY-MM-DD, and the
+        // (subject_id, session_date) uniqueness constraint depends on it.
+        sessionDate: DateHelpers.formatApiDate(s.sessionDate),
         status: s.status.name,
         createdAt: s.createdAt.toIso8601String(),
         updatedAt: s.updatedAt.toIso8601String(),

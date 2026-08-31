@@ -1,36 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import '../theme/app_colors.dart';
+import '../theme/neo_brutalism.dart';
 
-/// Shimmer loading skeleton for placeholder content
 class LoadingSkeleton extends StatelessWidget {
   final double width;
   final double height;
-  final double borderRadius;
 
   const LoadingSkeleton({
     super.key,
     this.width = double.infinity,
     required this.height,
-    this.borderRadius = 12,
   });
 
-  /// Preset: a card-like skeleton
   const LoadingSkeleton.card({super.key})
       : width = double.infinity,
-        height = 80,
-        borderRadius = 12;
+        height = 80;
 
-  /// Preset: a text line skeleton
   const LoadingSkeleton.text({super.key, this.width = 120})
-      : height = 14,
-        borderRadius = 6;
+      : height = 14;
 
-  /// Preset: a circle skeleton (avatar)
-  const LoadingSkeleton.circle({super.key, double size = 40})
+  const LoadingSkeleton.square({super.key, double size = 40})
       : width = size,
-        height = size,
-        borderRadius = size / 2;
+        height = size;
 
   @override
   Widget build(BuildContext context) {
@@ -44,14 +36,16 @@ class LoadingSkeleton extends StatelessWidget {
         height: height,
         decoration: BoxDecoration(
           color: isDark ? AppColors.surfaceVariantDark : AppColors.surfaceVariant,
-          borderRadius: BorderRadius.circular(borderRadius),
+          border: Border.all(
+            color: isDark ? AppColors.borderDark : AppColors.border,
+            width: 2,
+          ),
         ),
       ),
     );
   }
 }
 
-/// A list of skeleton cards for loading states
 class LoadingSkeletonList extends StatelessWidget {
   final int itemCount;
   const LoadingSkeletonList({super.key, this.itemCount = 5});
@@ -77,16 +71,10 @@ class _SkeletonCard extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark ? AppColors.borderDark : AppColors.border,
-        ),
-      ),
+      decoration: NeoBrutalism.flatCardDecoration(isDark: isDark),
       child: Row(
         children: [
-          const LoadingSkeleton.circle(),
+          const LoadingSkeleton.square(),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

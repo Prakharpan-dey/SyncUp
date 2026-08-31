@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/neo_brutalism.dart';
 
 class ShortageWarningBanner extends StatelessWidget {
   final int classesNeeded;
@@ -29,7 +30,7 @@ class ShortageWarningBanner extends StatelessWidget {
         icon: Icons.error_outline_rounded,
         color: AppColors.error,
         message:
-            'You must attend every remaining class — no absences allowed.',
+            'YOU MUST ATTEND EVERY REMAINING CLASS — NO ABSENCES ALLOWED.',
       );
     }
 
@@ -39,7 +40,7 @@ class ShortageWarningBanner extends StatelessWidget {
         icon: Icons.warning_amber_rounded,
         color: AppColors.warning,
         message:
-            'You need to attend the next $classesNeeded class${classesNeeded == 1 ? '' : 'es'} to reach $thresholdPct%.',
+            'YOU NEED TO ATTEND THE NEXT $classesNeeded CLASS${classesNeeded == 1 ? '' : 'ES'} TO REACH $thresholdPct%.',
       );
     }
 
@@ -49,7 +50,7 @@ class ShortageWarningBanner extends StatelessWidget {
         icon: Icons.check_circle_outline_rounded,
         color: AppColors.success,
         message:
-            'You can safely skip the next $safeToSkip class${safeToSkip == 1 ? '' : 'es'}.',
+            'YOU CAN SAFELY SKIP THE NEXT $safeToSkip CLASS${safeToSkip == 1 ? '' : 'ES'}.',
       );
     }
 
@@ -59,7 +60,7 @@ class ShortageWarningBanner extends StatelessWidget {
         context,
         icon: Icons.info_outline_rounded,
         color: AppColors.info,
-        message: 'You\'re right at $thresholdPct%. Don\'t skip any classes!',
+        message: 'YOU\'RE RIGHT AT $thresholdPct%. DON\'T SKIP ANY CLASSES!',
       );
     }
 
@@ -72,25 +73,24 @@ class ShortageWarningBanner extends StatelessWidget {
     required Color color,
     required String message,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
+      decoration: NeoBrutalism.bannerDecoration(color: color, isDark: isDark),
       child: Row(
         children: [
-          Icon(icon, color: color, size: 22),
+          Icon(icon, color: Colors.white, size: 22),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               message,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.w500,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
                   ),
             ),
           ),

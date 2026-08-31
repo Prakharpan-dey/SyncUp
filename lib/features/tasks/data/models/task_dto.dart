@@ -1,3 +1,4 @@
+import '../../../../core/utils/date_helpers.dart';
 import '../../domain/entities/task.dart';
 
 class TaskDto {
@@ -37,7 +38,9 @@ class TaskDto {
 
   factory TaskDto.fromDomain(Task t) => TaskDto(
     id: t.id, userId: t.userId, title: t.title, description: t.description,
-    dueDate: t.dueDate?.toIso8601String(), priority: t.priority.name,
+    // Date-only: the API validates due_date as YYYY-MM-DD.
+    dueDate: t.dueDate != null ? DateHelpers.formatApiDate(t.dueDate!) : null,
+    priority: t.priority.name,
     status: t.status.name, tags: t.tags,
     completedAt: t.completedAt?.toIso8601String(),
   );

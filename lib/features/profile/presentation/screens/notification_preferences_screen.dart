@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/di/core_providers.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/neo_brutalism.dart';
 import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
 
 class NotificationPreferencesScreen extends ConsumerStatefulWidget {
@@ -26,13 +27,18 @@ class _NotificationPreferencesScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Notification Preferences',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('NOTIFICATION PREFERENCES'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _SectionHeader(title: 'Reminders'),
+          Text(
+            'REMINDERS',
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.0,
+                ),
+          ),
           const SizedBox(height: 8),
           _ToggleTile(
             icon: Icons.alarm_rounded,
@@ -51,7 +57,13 @@ class _NotificationPreferencesScreenState
             onChanged: (v) => setState(() => _attendanceWarnings = v),
           ),
           const SizedBox(height: 20),
-          _SectionHeader(title: 'Social'),
+          Text(
+            'SOCIAL',
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.0,
+                ),
+          ),
           const SizedBox(height: 8),
           _ToggleTile(
             icon: Icons.person_add_rounded,
@@ -78,7 +90,13 @@ class _NotificationPreferencesScreenState
             onChanged: (v) => setState(() => _comments = v),
           ),
           const SizedBox(height: 20),
-          _SectionHeader(title: 'Digest'),
+          Text(
+            'DIGEST',
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.0,
+                ),
+          ),
           const SizedBox(height: 8),
           _ToggleTile(
             icon: Icons.summarize_rounded,
@@ -92,14 +110,14 @@ class _NotificationPreferencesScreenState
           SizedBox(
             width: double.infinity,
             height: 48,
-            child: FilledButton(
+            child: ElevatedButton(
               onPressed: _saving ? null : _save,
               child: _saving
                   ? const SizedBox(
                       width: 20, height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Save Changes'),
+                  : const Text('SAVE CHANGES'),
             ),
           ),
         ],
@@ -139,20 +157,6 @@ class _NotificationPreferencesScreenState
   }
 }
 
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  const _SectionHeader({required this.title});
-
-  @override
-  Widget build(BuildContext context) => Text(
-        title,
-        style: Theme.of(context)
-            .textTheme
-            .titleSmall
-            ?.copyWith(fontWeight: FontWeight.w600),
-      );
-}
-
 class _ToggleTile extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
@@ -174,22 +178,16 @@ class _ToggleTile extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.surfaceDark : AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isDark ? AppColors.borderDark : AppColors.border,
-          ),
-        ),
+        decoration: NeoBrutalism.flatCardDecoration(isDark: isDark),
         child: Row(
           children: [
             Container(
               width: 36, height: 36,
-              decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(8),
+              decoration: NeoBrutalism.iconBoxDecoration(
+                color: iconColor,
+                isDark: isDark,
               ),
-              child: Icon(icon, size: 18, color: iconColor),
+              child: Icon(icon, size: 18, color: Colors.white),
             ),
             const SizedBox(width: 12),
             Expanded(

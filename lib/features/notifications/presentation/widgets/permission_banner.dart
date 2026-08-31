@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/neo_brutalism.dart';
 import '../../di/notification_providers.dart';
 
 class PermissionBanner extends ConsumerStatefulWidget {
@@ -38,14 +39,11 @@ class _PermissionBannerState extends ConsumerState<PermissionBanner> {
       duration: const Duration(milliseconds: 300),
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
+      decoration: NeoBrutalism.bannerDecoration(
         color: isDark
             ? AppColors.primary.withValues(alpha: 0.1)
             : AppColors.primary.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.2),
-        ),
+        isDark: isDark,
       ),
       child: Row(
         children: [
@@ -75,7 +73,7 @@ class _PermissionBannerState extends ConsumerState<PermissionBanner> {
               padding: const EdgeInsets.symmetric(horizontal: 8),
               textStyle: const TextStyle(fontSize: 12),
             ),
-            child: const Text('Enable'),
+            child: const Text('ENABLE'),
           ),
           IconButton(
             onPressed: () => setState(() {

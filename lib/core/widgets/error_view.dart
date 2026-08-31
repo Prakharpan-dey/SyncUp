@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../theme/neo_brutalism.dart';
 
-/// Reusable error view with icon, message, and optional retry button
 class ErrorView extends StatelessWidget {
   final String message;
   final VoidCallback? onRetry;
@@ -14,12 +14,10 @@ class ErrorView extends StatelessWidget {
     this.icon = Icons.error_outline_rounded,
   });
 
-  /// Preset: network error
   const ErrorView.network({super.key, this.onRetry})
       : message = 'Cannot connect to the server.\nCheck your internet connection.',
         icon = Icons.wifi_off_rounded;
 
-  /// Preset: generic server error
   const ErrorView.server({super.key, this.onRetry})
       : message = 'Something went wrong.\nPlease try again later.',
         icon = Icons.cloud_off_rounded;
@@ -37,14 +35,14 @@ class ErrorView extends StatelessWidget {
             Container(
               width: 80,
               height: 80,
-              decoration: BoxDecoration(
-                color: AppColors.error.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(20),
+              decoration: NeoBrutalism.iconBoxDecoration(
+                isDark: isDark,
+                color: AppColors.error.withValues(alpha: 0.2),
               ),
               child: Icon(
                 icon,
                 size: 40,
-                color: AppColors.error.withValues(alpha: 0.7),
+                color: AppColors.error,
               ),
             ),
             const SizedBox(height: 20),

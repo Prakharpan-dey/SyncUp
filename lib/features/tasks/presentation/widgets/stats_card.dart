@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/neo_brutalism.dart';
 
 class StatsCard extends StatelessWidget {
   final int totalTasks;
@@ -15,47 +17,54 @@ class StatsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final completionRate =
         totalTasks > 0 ? (completedTasks / totalTasks * 100).round() : 0;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Padding(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        decoration: NeoBrutalism.cardDecoration(isDark: isDark),
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Task Stats',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
+              'TASK STATS',
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
               ),
             ),
             const SizedBox(height: 12),
             Row(
               children: [
                 _StatItem(
-                  label: 'Total',
+                  label: 'TOTAL',
                   value: '$totalTasks',
-                  color: theme.colorScheme.primary,
+                  color: AppColors.primary,
+                  isDark: isDark,
                 ),
-                const SizedBox(width: 24),
+                const SizedBox(width: 12),
                 _StatItem(
-                  label: 'Done',
+                  label: 'DONE',
                   value: '$completedTasks',
-                  color: const Color(0xFF00B894),
+                  color: AppColors.success,
+                  isDark: isDark,
                 ),
-                const SizedBox(width: 24),
+                const SizedBox(width: 12),
                 _StatItem(
-                  label: 'Pending',
+                  label: 'PENDING',
                   value: '$pendingTasks',
-                  color: const Color(0xFFFDAA5D),
+                  color: AppColors.warning,
+                  isDark: isDark,
                 ),
-                const SizedBox(width: 24),
+                const SizedBox(width: 12),
                 _StatItem(
-                  label: 'Rate',
+                  label: 'RATE',
                   value: '$completionRate%',
-                  color: const Color(0xFF74B9FF),
+                  color: AppColors.info,
+                  isDark: isDark,
                 ),
               ],
             ),
@@ -70,34 +79,45 @@ class _StatItem extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
+  final bool isDark;
 
   const _StatItem({
     required this.label,
     required this.value,
     required this.color,
+    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Expanded(
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: color,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: NeoBrutalism.flatCardDecoration(
+          color: color,
+          isDark: isDark,
+        ),
+        child: Column(
+          children: [
+            Text(
+              value,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.outline,
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: Colors.white.withValues(alpha: 0.85),
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.8,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

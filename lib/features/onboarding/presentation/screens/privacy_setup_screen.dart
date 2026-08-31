@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/di/core_providers.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/neo_brutalism.dart';
 import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
 
 class PrivacySetupScreen extends ConsumerStatefulWidget {
@@ -32,20 +33,20 @@ class _PrivacySetupScreenState extends ConsumerState<PrivacySetupScreen> {
               Container(
                 width: 64,
                 height: 64,
-                decoration: BoxDecoration(
-                  color: AppColors.accent.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(16),
+                decoration: NeoBrutalism.iconBoxDecoration(
+                  color: AppColors.accent,
+                  isDark: isDark,
                 ),
                 child: const Icon(Icons.shield_rounded,
-                    size: 32, color: AppColors.accent),
+                    size: 32, color: Colors.white),
               ),
               const SizedBox(height: 24),
               Text(
-                'Your privacy, your rules',
+                'YOUR PRIVACY, YOUR RULES',
                 style: Theme.of(context)
                     .textTheme
                     .headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.bold),
+                    ?.copyWith(letterSpacing: 1.0),
               ),
               const SizedBox(height: 8),
               Text(
@@ -60,11 +61,11 @@ class _PrivacySetupScreenState extends ConsumerState<PrivacySetupScreen> {
 
               // Who can find me
               Text(
-                'Who can find me in search?',
+                'WHO CAN FIND ME IN SEARCH?',
                 style: Theme.of(context)
                     .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600),
+                    .labelLarge
+                    ?.copyWith(fontWeight: FontWeight.w700, letterSpacing: 1.0),
               ),
               const SizedBox(height: 8),
               _buildOption('everyone', 'Everyone', Icons.public_rounded,
@@ -86,11 +87,11 @@ class _PrivacySetupScreenState extends ConsumerState<PrivacySetupScreen> {
 
               // Default sharing
               Text(
-                'What do I share with friends?',
+                'WHAT DO I SHARE WITH FRIENDS?',
                 style: Theme.of(context)
                     .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w600),
+                    .labelLarge
+                    ?.copyWith(fontWeight: FontWeight.w700, letterSpacing: 1.0),
               ),
               const SizedBox(height: 8),
               _buildOption(
@@ -124,7 +125,7 @@ class _PrivacySetupScreenState extends ConsumerState<PrivacySetupScreen> {
                           width: 20, height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Get Started'),
+                      : const Text('GET STARTED'),
                 ),
               ),
               const SizedBox(height: 16),
@@ -160,24 +161,17 @@ class _PrivacySetupScreenState extends ConsumerState<PrivacySetupScreen> {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: InkWell(
+      child: GestureDetector(
         onTap: () => onChanged(value),
-        borderRadius: BorderRadius.circular(12),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: selected
-                ? AppColors.primary.withValues(alpha: 0.08)
-                : (isDark ? AppColors.surfaceDark : AppColors.surface),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: selected
-                  ? AppColors.primary
-                  : (isDark ? AppColors.borderDark : AppColors.border),
-              width: selected ? 1.5 : 1,
-            ),
-          ),
+          decoration: selected
+              ? NeoBrutalism.selectedDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  isDark: isDark,
+                )
+              : NeoBrutalism.unselectedDecoration(isDark: isDark),
           child: Row(
             children: [
               Icon(icon,

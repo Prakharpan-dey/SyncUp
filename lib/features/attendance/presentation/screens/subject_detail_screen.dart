@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/neo_brutalism.dart';
 import '../../domain/entities/attendance_session.dart';
 import '../viewmodels/attendance_viewmodel.dart';
-import '../widgets/attendance_percentage_ring.dart';
-import '../widgets/shortage_warning_banner.dart';
-import '../widgets/session_card.dart';
 
 class SubjectDetailScreen extends ConsumerStatefulWidget {
   final String subjectId;
@@ -28,176 +28,17 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
     });
   }
 
-  void _showLogAttendanceSheet() {
-    DateTime selectedDate = DateTime.now();
-    AttendanceStatus selectedStatus = AttendanceStatus.present;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setModalState) {
-            final isDark = Theme.of(ctx).brightness == Brightness.dark;
-
-            return Padding(
-              padding: EdgeInsets.fromLTRB(
-                  24, 24, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Handle bar
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? AppColors.borderDark
-                            : AppColors.border,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Log Attendance',
-                    style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Date picker
-                  Text(
-                    'Date',
-                    style: Theme.of(ctx).textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  InkWell(
-                    onTap: () async {
-                      final picked = await showDatePicker(
-                        context: ctx,
-                        initialDate: selectedDate,
-                        firstDate:
-                            DateTime.now().subtract(const Duration(days: 30)),
-                        lastDate: DateTime.now(),
-                      );
-                      if (picked != null) {
-                        setModalState(() => selectedDate = picked);
-                      }
-                    },
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 14),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? AppColors.surfaceVariantDark
-                            : AppColors.surfaceVariant,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.calendar_today_rounded, size: 20),
-                          const SizedBox(width: 12),
-                          Text(
-                            '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
-                            style: Theme.of(ctx).textTheme.bodyLarge,
-                          ),
-                          const Spacer(),
-                          Icon(
-                            Icons.arrow_drop_down_rounded,
-                            color: isDark
-                                ? AppColors.textSecondaryDark
-                                : AppColors.textSecondary,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Status selection
-                  Text(
-                    'Status',
-                    style: Theme.of(ctx).textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _StatusButton(
-                          label: 'Present',
-                          icon: Icons.check_rounded,
-                          color: AppColors.success,
-                          isSelected:
-                              selectedStatus == AttendanceStatus.present,
-                          onTap: () => setModalState(
-                              () => selectedStatus = AttendanceStatus.present),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _StatusButton(
-                          label: 'Absent',
-                          icon: Icons.close_rounded,
-                          color: AppColors.error,
-                          isSelected:
-                              selectedStatus == AttendanceStatus.absent,
-                          onTap: () => setModalState(
-                              () => selectedStatus = AttendanceStatus.absent),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Submit
-                  ElevatedButton(
-                    onPressed: () {
-                      ref
-                          .read(attendanceViewModelProvider.notifier)
-                          .logAttendance(
-                            subjectId: widget.subjectId,
-                            date: selectedDate,
-                            status: selectedStatus,
-                          );
-                      Navigator.pop(ctx);
-                    },
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 2),
-                      child: Text('Log Attendance'),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
   void _confirmDeleteSubject() {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Subject'),
+        title: const Text('DELETE SUBJECT'),
         content: const Text(
             'This will delete the subject and all its attendance records. This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: const Text('CANCEL'),
           ),
           TextButton(
             onPressed: () {
@@ -208,7 +49,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
               context.go('/attendance');
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Delete'),
+            child: const Text('DELETE'),
           ),
         ],
       ),
@@ -220,8 +61,9 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
     final state = ref.watch(attendanceViewModelProvider);
     final vm = ref.read(attendanceViewModelProvider.notifier);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = isDark ? AppColors.borderDark : AppColors.border;
+    final shadowColor = isDark ? AppColors.shadowDark : AppColors.border;
 
-    // Find the subject
     final subject =
         state.subjects.where((s) => s.id == widget.subjectId).firstOrNull;
 
@@ -235,307 +77,481 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
     final percentage = state.attendancePercentage(subject.id);
     final total = state.totalClasses(subject.id);
     final attended = state.attendedClasses(subject.id);
-    final classesNeeded = vm.classesNeeded(subject.id);
     final safeToSkip = vm.safeToSkip(subject.id);
+    final classesNeeded = vm.classesNeeded(subject.id);
 
-    // Filter sessions for this subject
     final sessions =
-        state.sessions.where((s) => s.subjectId == subject.id).toList();
+        state.sessions.where((s) => s.subjectId == subject.id).toList()
+          ..sort((a, b) => b.sessionDate.compareTo(a.sessionDate));
+
+    final isAboveThreshold =
+        percentage != null && percentage >= subject.thresholdPct;
+    final attendanceColor = percentage == null
+        ? AppColors.textTertiary
+        : isAboveThreshold
+            ? AppColors.success
+            : (percentage >= subject.thresholdPct - 10
+                ? AppColors.warning
+                : AppColors.error);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          subject.name,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        actions: [
-          PopupMenuButton(
-            icon: const Icon(Icons.more_vert_rounded),
-            itemBuilder: (_) => [
-              const PopupMenuItem(
-                value: 'delete',
+      body: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            // Back button row
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
                 child: Row(
                   children: [
-                    Icon(Icons.delete_outline_rounded,
-                        color: AppColors.error, size: 20),
-                    SizedBox(width: 8),
-                    Text('Delete Subject',
-                        style: TextStyle(color: AppColors.error)),
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_rounded),
+                      onPressed: () => context.go('/attendance'),
+                    ),
+                    const Spacer(),
+                    PopupMenuButton(
+                      icon: const Icon(Icons.more_vert_rounded),
+                      itemBuilder: (_) => [
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete_outline_rounded,
+                                  color: AppColors.error, size: 20),
+                              SizedBox(width: 8),
+                              Text('DELETE SUBJECT',
+                                  style: TextStyle(color: AppColors.error)),
+                            ],
+                          ),
+                        ),
+                      ],
+                      onSelected: (value) {
+                        if (value == 'delete') _confirmDeleteSubject();
+                      },
+                    ),
                   ],
                 ),
               ),
-            ],
-            onSelected: (value) {
-              if (value == 'delete') _confirmDeleteSubject();
-            },
-          ),
-        ],
-      ),
-      body: state.isLoading && sessions.isEmpty
-          ? const Center(child: CircularProgressIndicator())
-          : CustomScrollView(
-              slivers: [
-                // Stats header
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            AppColors.primary.withOpacity(0.08),
-                            AppColors.accent.withOpacity(0.05),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
+            ),
+
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Subject code
+                    if (subject.code != null)
+                      Text(
+                        subject.code!.toUpperCase(),
+                        style: GoogleFonts.dmMono(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 1.2,
                           color: isDark
-                              ? AppColors.borderDark
-                              : AppColors.border,
+                              ? AppColors.textSecondaryDark
+                              : AppColors.textSecondary,
                         ),
                       ),
-                      child: Column(
-                        children: [
-                          // Percentage ring
-                          AttendancePercentageRing(
-                            percentage: percentage,
-                            thresholdPct: subject.thresholdPct,
-                            size: 140,
-                            strokeWidth: 12,
+                    // Subject name
+                    Text(
+                      subject.name,
+                      style: GoogleFonts.bigShoulders(
+                        fontSize: 46,
+                        fontWeight: FontWeight.w900,
+                        height: 0.88,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Big attendance card
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: attendanceColor,
+                        border: Border.all(
+                            color: borderColor, width: 4),
+                        boxShadow: [
+                          BoxShadow(
+                            color: shadowColor,
+                            offset: const Offset(7, 7),
                           ),
-                          const SizedBox(height: 20),
-                          // Stats row
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              _StatItem(
-                                label: 'Total',
-                                value: '$total',
-                                isDark: isDark,
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'ATTENDANCE',
+                                      style: GoogleFonts.dmMono(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w500,
+                                        letterSpacing: 1.0,
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                    Text.rich(
+                                      TextSpan(
+                                        children: [
+                                          TextSpan(
+                                            text: percentage != null
+                                                ? '${percentage.round()}'
+                                                : '--',
+                                            style: GoogleFonts.bigShoulders(
+                                              fontSize: 76,
+                                              fontWeight: FontWeight.w900,
+                                              height: 0.85,
+                                              color: Colors.black,
+                                            ),
+                                          ),
+                                          TextSpan(
+                                            text: '%',
+                                            style: GoogleFonts.bigShoulders(
+                                              fontSize: 30,
+                                              fontWeight: FontWeight.w900,
+                                              color: Colors.black,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                              _StatItem(
-                                label: 'Present',
-                                value: '$attended',
-                                color: AppColors.success,
-                                isDark: isDark,
-                              ),
-                              _StatItem(
-                                label: 'Absent',
-                                value: '${total - attended}',
-                                color: AppColors.error,
-                                isDark: isDark,
-                              ),
-                              _StatItem(
-                                label: 'Threshold',
-                                value: '${subject.thresholdPct}%',
-                                color: AppColors.primary,
-                                isDark: isDark,
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    '$attended / $total',
+                                    style: GoogleFonts.dmMono(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w400,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                  Text(
+                                    'REQ ${subject.thresholdPct}%',
+                                    style: GoogleFonts.dmMono(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w400,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                          if (subject.code != null) ...[
+                          // Session strip
+                          if (sessions.isNotEmpty) ...[
                             const SizedBox(height: 12),
-                            Text(
-                              subject.code!,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    color: isDark
-                                        ? AppColors.textSecondaryDark
-                                        : AppColors.textSecondary,
-                                  ),
+                            SizedBox(
+                              height: 26,
+                              child: Row(
+                                children: sessions
+                                    .take(12)
+                                    .toList()
+                                    .reversed
+                                    .map((s) => Expanded(
+                                          child: Container(
+                                            margin:
+                                                const EdgeInsets.only(right: 3),
+                                            decoration: BoxDecoration(
+                                              color: s.isPresent
+                                                  ? Colors.black
+                                                  : (isDark
+                                                      ? AppColors.backgroundDark
+                                                      : Colors.white),
+                                              border: Border.all(
+                                                  color: Colors.black,
+                                                  width: 2),
+                                            ),
+                                          ),
+                                        ))
+                                    .toList(),
+                              ),
                             ),
                           ],
                         ],
                       ),
                     ),
-                  ),
-                ),
+                    const SizedBox(height: 14),
 
-                // Shortage / safe banner
-                SliverToBoxAdapter(
-                  child: ShortageWarningBanner(
-                    classesNeeded: classesNeeded,
-                    safeToSkip: safeToSkip,
-                    thresholdPct: subject.thresholdPct,
-                    percentage: percentage,
-                  ),
-                ),
+                    // Safe to skip / warning banner
+                    if (percentage != null) _buildWarningBanner(
+                      isDark: isDark,
+                      borderColor: borderColor,
+                      shadowColor: shadowColor,
+                      safeToSkip: safeToSkip,
+                      classesNeeded: classesNeeded,
+                      isAboveThreshold: isAboveThreshold,
+                      thresholdPct: subject.thresholdPct,
+                    ),
 
-                // Session history header
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                    child: Row(
+                    // PRESENT / ABSENT buttons
+                    Row(
                       children: [
-                        Text(
-                          'Session History',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        const Spacer(),
-                        Text(
-                          '${sessions.length} sessions',
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: isDark
-                                        ? AppColors.textSecondaryDark
-                                        : AppColors.textSecondary,
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              ref
+                                  .read(
+                                      attendanceViewModelProvider.notifier)
+                                  .logAttendance(
+                                    subjectId: widget.subjectId,
+                                    date: DateTime.now(),
+                                    status: AttendanceStatus.present,
+                                  );
+                            },
+                            child: Container(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 15),
+                              decoration: BoxDecoration(
+                                color: AppColors.success,
+                                border:
+                                    Border.all(color: borderColor, width: 3),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: shadowColor,
+                                    offset:
+                                        const Offset(5, 5),
                                   ),
+                                ],
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'PRESENT',
+                                  style: GoogleFonts.bigShoulders(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 9),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              ref
+                                  .read(
+                                      attendanceViewModelProvider.notifier)
+                                  .logAttendance(
+                                    subjectId: widget.subjectId,
+                                    date: DateTime.now(),
+                                    status: AttendanceStatus.absent,
+                                  );
+                            },
+                            child: Container(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 15),
+                              decoration: BoxDecoration(
+                                color: AppColors.error,
+                                border:
+                                    Border.all(color: borderColor, width: 3),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: shadowColor,
+                                    offset:
+                                        const Offset(5, 5),
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'ABSENT',
+                                  style: GoogleFonts.bigShoulders(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                  ),
-                ),
+                    const SizedBox(height: 18),
 
-                // Sessions list or empty
-                if (sessions.isEmpty)
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Center(
-                        child: Column(
-                          children: [
-                            Icon(
-                              Icons.event_note_rounded,
-                              size: 48,
-                              color: isDark
-                                  ? AppColors.textSecondaryDark
-                                  : AppColors.textTertiary,
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              'No sessions logged yet',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(
-                                    color: isDark
-                                        ? AppColors.textSecondaryDark
-                                        : AppColors.textSecondary,
-                                  ),
-                            ),
-                          ],
+                    // Recent sessions header
+                    Text(
+                      'RECENT SESSIONS',
+                      style: GoogleFonts.dmMono(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 1.0,
+                        color: isDark
+                            ? AppColors.textPrimaryDark
+                            : AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                ),
+              ),
+            ),
+
+            // Session list
+            if (sessions.isEmpty)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration:
+                        NeoBrutalism.flatCardDecoration(isDark: isDark),
+                    child: Center(
+                      child: Text(
+                        'NO SESSIONS LOGGED YET',
+                        style: GoogleFonts.dmMono(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: isDark
+                              ? AppColors.textSecondaryDark
+                              : AppColors.textSecondary,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ),
-                  )
-                else
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-                    sliver: SliverList.separated(
-                      itemCount: sessions.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemBuilder: (context, index) {
-                        final session = sessions[index];
-                        return SessionCard(
-                          session: session,
-                          onDelete: () => vm.deleteSession(session.id),
-                        );
-                      },
-                    ),
                   ),
-              ],
-            ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showLogAttendanceSheet,
-        icon: const Icon(Icons.edit_calendar_rounded),
-        label: const Text('Log Attendance'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
-      ),
-    );
-  }
-}
-
-class _StatusButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final Color color;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _StatusButton({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.15) : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? color : AppColors.border,
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: isSelected ? color : AppColors.textTertiary),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? color : AppColors.textTertiary,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                ),
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+                sliver: SliverList.separated(
+                  itemCount: sessions.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 7),
+                  itemBuilder: (context, index) {
+                    final session = sessions[index];
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 11, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? AppColors.surfaceDark
+                            : AppColors.surface,
+                        border: Border.all(color: borderColor, width: 3),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              DateFormat('EEE d MMM')
+                                  .format(session.sessionDate),
+                              style: GoogleFonts.archivo(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 7, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: session.isPresent
+                                  ? AppColors.success
+                                  : AppColors.error,
+                              border:
+                                  Border.all(color: borderColor, width: 2),
+                            ),
+                            child: Text(
+                              session.isPresent ? 'PRESENT' : 'ABSENT',
+                              style: GoogleFonts.dmMono(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
           ],
         ),
       ),
     );
   }
-}
 
-class _StatItem extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color? color;
-  final bool isDark;
+  Widget _buildWarningBanner({
+    required bool isDark,
+    required Color borderColor,
+    required Color shadowColor,
+    required int safeToSkip,
+    required int classesNeeded,
+    required bool isAboveThreshold,
+    required int thresholdPct,
+  }) {
+    final String title;
+    final String subtitle;
 
-  const _StatItem({
-    required this.label,
-    required this.value,
-    this.color,
-    required this.isDark,
-  });
+    if (isAboveThreshold && safeToSkip > 0) {
+      title = 'SAFE TO SKIP: $safeToSkip';
+      subtitle =
+          'Miss ${safeToSkip == 1 ? "another" : "more than $safeToSkip"} and you drop under $thresholdPct%.';
+    } else if (isAboveThreshold && safeToSkip == 0) {
+      title = 'AT THRESHOLD';
+      subtitle = 'You\'re right at $thresholdPct%. Don\'t skip any classes!';
+    } else if (!isAboveThreshold && classesNeeded > 0) {
+      title = 'NEED $classesNeeded MORE';
+      subtitle =
+          'Attend the next $classesNeeded class${classesNeeded == 1 ? '' : 'es'} to reach $thresholdPct%.';
+    } else {
+      return const SizedBox(height: 14);
+    }
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.warning,
+          border: Border.all(color: borderColor, width: 3),
+          boxShadow: [
+            BoxShadow(color: shadowColor, offset: const Offset(5, 5)),
+          ],
         ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color:
-                    isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: GoogleFonts.bigShoulders(
+                fontSize: 26,
+                fontWeight: FontWeight.w900,
+                height: 1.0,
+                color: Colors.black,
               ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+                style: GoogleFonts.archivo(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w400,
+                  height: 1.4,
+                  color: Colors.black,
+                ),
+              ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/di/core_providers.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/neo_brutalism.dart';
 import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
 
 class DisplayNameScreen extends ConsumerStatefulWidget {
@@ -43,20 +44,20 @@ class _DisplayNameScreenState extends ConsumerState<DisplayNameScreen> {
                 Container(
                   width: 64,
                   height: 64,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(16),
+                  decoration: NeoBrutalism.iconBoxDecoration(
+                    color: AppColors.primary,
+                    isDark: isDark,
                   ),
                   child: const Icon(Icons.person_rounded,
-                      size: 32, color: AppColors.primary),
+                      size: 32, color: Colors.white),
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'What should we call you?',
+                  'WHAT SHOULD WE CALL YOU?',
                   style: Theme.of(context)
                       .textTheme
                       .headlineSmall
-                      ?.copyWith(fontWeight: FontWeight.bold),
+                      ?.copyWith(letterSpacing: 1.0),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -123,7 +124,7 @@ class _DisplayNameScreenState extends ConsumerState<DisplayNameScreen> {
                             width: 20, height: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Continue'),
+                        : const Text('CONTINUE'),
                   ),
                 ),
                 const SizedBox(height: 16),

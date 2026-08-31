@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/neo_brutalism.dart';
 import '../viewmodels/notification_viewmodel.dart';
 import '../widgets/notification_card.dart';
 
@@ -30,10 +31,7 @@ class _NotificationCentreScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Notifications',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: const Text('NOTIFICATIONS'),
         actions: [
           if (state.unreadCount > 0)
             TextButton.icon(
@@ -43,7 +41,7 @@ class _NotificationCentreScreenState
                     .markAllAsRead();
               },
               icon: const Icon(Icons.done_all_rounded, size: 18),
-              label: const Text('Read All'),
+              label: const Text('READ ALL'),
             ),
         ],
       ),
@@ -60,13 +58,11 @@ class _NotificationCentreScreenState
                     return NotificationCard(
                       notification: notification,
                       onTap: () {
-                        // Mark as read
                         if (!notification.isRead) {
                           ref
                               .read(notificationViewModelProvider.notifier)
                               .markAsRead(notification.id);
                         }
-                        // Navigate to deep link if available
                         if (notification.deepLink != null) {
                           context.go(notification.deepLink!);
                         }
@@ -92,23 +88,23 @@ class _NotificationCentreScreenState
             Container(
               width: 100,
               height: 100,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(24),
+              decoration: NeoBrutalism.iconBoxDecoration(
+                color: AppColors.primary,
+                isDark: isDark,
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.notifications_none_rounded,
                 size: 48,
-                color: AppColors.primary.withValues(alpha: 0.6),
+                color: Colors.white,
               ),
             ),
             const SizedBox(height: 24),
             Text(
-              'No notifications yet',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleLarge
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              'NO NOTIFICATIONS YET',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.0,
+                  ),
             ),
             const SizedBox(height: 8),
             Text(

@@ -18,6 +18,12 @@ class DateHelpers {
 
   static String formatDate(DateTime date) => DateFormat.yMMMd().format(date);
 
+  /// Calendar date as `YYYY-MM-DD`, the wire format the API expects for
+  /// `due_date` and `session_date`. Those map to Postgres `date` columns, so
+  /// sending a full ISO timestamp fails validation.
+  static String formatApiDate(DateTime date) =>
+      DateFormat('yyyy-MM-dd').format(date);
+
   static String formatRelative(DateTime date) {
     final diff = DateTime.now().difference(date);
     if (diff.inMinutes < 1) return 'Just now';

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/neo_brutalism.dart';
 import '../../domain/entities/app_notification.dart';
 
 class NotificationCard extends StatelessWidget {
@@ -70,13 +71,15 @@ class NotificationCard extends StatelessWidget {
         padding: const EdgeInsets.only(right: 20),
         decoration: BoxDecoration(
           color: AppColors.success.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isDark ? AppColors.borderDark : AppColors.border,
+            width: NeoBrutalism.borderWidthSmall,
+          ),
         ),
         child: const Icon(Icons.done_all_rounded, color: AppColors.success),
       ),
-      child: InkWell(
+      child: GestureDetector(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
@@ -85,26 +88,24 @@ class NotificationCard extends StatelessWidget {
                 : (isDark
                     ? AppColors.primary.withValues(alpha: 0.06)
                     : AppColors.primary.withValues(alpha: 0.04)),
-            borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isDark ? AppColors.borderDark : AppColors.border,
+              width: NeoBrutalism.borderWidthSmall,
             ),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Icon
               Container(
                 width: 40,
                 height: 40,
-                decoration: BoxDecoration(
-                  color: _iconColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
+                decoration: NeoBrutalism.iconBoxDecoration(
+                  color: _iconColor,
+                  isDark: isDark,
                 ),
-                child: Icon(_icon, size: 20, color: _iconColor),
+                child: Icon(_icon, size: 20, color: Colors.white),
               ),
               const SizedBox(width: 12),
-              // Content
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -140,15 +141,17 @@ class NotificationCard extends StatelessWidget {
                   ],
                 ),
               ),
-              // Unread dot
               if (!notification.isRead)
                 Container(
                   width: 8,
                   height: 8,
                   margin: const EdgeInsets.only(top: 6),
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     color: AppColors.primary,
-                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isDark ? AppColors.borderDark : AppColors.border,
+                      width: 1,
+                    ),
                   ),
                 ),
             ],

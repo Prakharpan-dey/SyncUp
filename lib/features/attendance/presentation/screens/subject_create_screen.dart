@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/auth/current_user.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/neo_brutalism.dart';
 import '../viewmodels/attendance_viewmodel.dart';
 
 class SubjectCreateScreen extends ConsumerStatefulWidget {
@@ -29,7 +31,7 @@ class _SubjectCreateScreenState extends ConsumerState<SubjectCreateScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     ref.read(attendanceViewModelProvider.notifier).addSubject(
-          userId: 'current-user', // TODO: Replace with actual user ID
+          userId: ref.read(currentUserIdProvider),
           name: _nameCtrl.text,
           code: _codeCtrl.text.isEmpty ? null : _codeCtrl.text,
           thresholdPct: _thresholdPct.round(),
@@ -45,21 +47,18 @@ class _SubjectCreateScreenState extends ConsumerState<SubjectCreateScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Add Subject',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: const Text('ADD SUBJECT'),
       ),
       body: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(24),
           children: [
-            // Subject name
             Text(
-              'Subject Name',
+              'SUBJECT NAME',
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
                   ),
             ),
             const SizedBox(height: 8),
@@ -80,11 +79,11 @@ class _SubjectCreateScreenState extends ConsumerState<SubjectCreateScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Subject code (optional)
             Text(
-              'Subject Code (Optional)',
+              'SUBJECT CODE (OPTIONAL)',
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
                   ),
             ),
             const SizedBox(height: 8),
@@ -99,11 +98,11 @@ class _SubjectCreateScreenState extends ConsumerState<SubjectCreateScreen> {
             ),
             const SizedBox(height: 32),
 
-            // Threshold slider
             Text(
-              'Attendance Threshold',
+              'ATTENDANCE THRESHOLD',
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
                   ),
             ),
             const SizedBox(height: 4),
@@ -117,29 +116,14 @@ class _SubjectCreateScreenState extends ConsumerState<SubjectCreateScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Threshold display
             Container(
               padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppColors.primary.withOpacity(0.08),
-                    AppColors.accent.withOpacity(0.05),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isDark ? AppColors.borderDark : AppColors.border,
-                ),
-              ),
+              decoration: NeoBrutalism.cardDecoration(isDark: isDark),
               child: Column(
                 children: [
                   Text(
                     '${_thresholdPct.round()}%',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
+                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                           color: AppColors.primary,
                         ),
                   ),
@@ -147,9 +131,9 @@ class _SubjectCreateScreenState extends ConsumerState<SubjectCreateScreen> {
                   SliderTheme(
                     data: SliderThemeData(
                       activeTrackColor: AppColors.primary,
-                      inactiveTrackColor: AppColors.primary.withOpacity(0.15),
+                      inactiveTrackColor: AppColors.primary.withValues(alpha: 0.15),
                       thumbColor: AppColors.primary,
-                      overlayColor: AppColors.primary.withOpacity(0.1),
+                      overlayColor: AppColors.primary.withValues(alpha: 0.1),
                       trackHeight: 6,
                     ),
                     child: Slider(
@@ -189,7 +173,6 @@ class _SubjectCreateScreenState extends ConsumerState<SubjectCreateScreen> {
             ),
             const SizedBox(height: 12),
 
-            // Common threshold shortcuts
             Wrap(
               spacing: 8,
               children: [50, 60, 75, 80, 85].map((pct) {
@@ -197,17 +180,18 @@ class _SubjectCreateScreenState extends ConsumerState<SubjectCreateScreen> {
                 return ActionChip(
                   label: Text('$pct%'),
                   backgroundColor: isSelected
-                      ? AppColors.primary.withOpacity(0.15)
+                      ? AppColors.primary.withValues(alpha: 0.15)
                       : null,
                   side: BorderSide(
                     color: isSelected
                         ? AppColors.primary
                         : (isDark ? AppColors.borderDark : AppColors.border),
+                    width: NeoBrutalism.borderWidthSmall,
                   ),
                   labelStyle: TextStyle(
                     color: isSelected ? AppColors.primary : null,
                     fontWeight:
-                        isSelected ? FontWeight.w600 : FontWeight.normal,
+                        isSelected ? FontWeight.w700 : FontWeight.w500,
                   ),
                   onPressed: () {
                     setState(() => _thresholdPct = pct.toDouble());
@@ -217,16 +201,21 @@ class _SubjectCreateScreenState extends ConsumerState<SubjectCreateScreen> {
             ),
             const SizedBox(height: 40),
 
-            // Error message
             if (state.error != null) ...[
-              Text(
-                state.error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: NeoBrutalism.bannerDecoration(
+                  color: AppColors.error.withValues(alpha: 0.15),
+                  isDark: isDark,
+                ),
+                child: Text(
+                  state.error!,
+                  style: const TextStyle(color: AppColors.error),
+                ),
               ),
               const SizedBox(height: 16),
             ],
 
-            // Submit button
             ElevatedButton(
               onPressed: state.isLoading ? null : _submit,
               child: state.isLoading
@@ -235,10 +224,7 @@ class _SubjectCreateScreenState extends ConsumerState<SubjectCreateScreen> {
                       width: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 2),
-                      child: Text('Create Subject'),
-                    ),
+                  : const Text('CREATE SUBJECT'),
             ),
           ],
         ),

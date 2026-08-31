@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/neo_brutalism.dart';
 
 class AttendancePercentageRing extends StatelessWidget {
   final double? percentage;
@@ -28,46 +29,63 @@ class AttendancePercentageRing extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final trackColor = isDark ? AppColors.surfaceVariantDark : AppColors.surfaceVariant;
 
-    return SizedBox(
-      width: size,
-      height: size,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          CustomPaint(
-            size: Size(size, size),
-            painter: _RingPainter(
-              progress: percentage != null ? percentage! / 100 : 0,
-              progressColor: _progressColor,
-              trackColor: trackColor,
-              strokeWidth: strokeWidth,
-            ),
-          ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                percentage != null
-                    ? '${percentage!.toStringAsFixed(size >= 100 ? 1 : 0)}%'
-                    : '—',
-                style: TextStyle(
-                  fontSize: size * 0.2,
-                  fontWeight: FontWeight.bold,
-                  color: _progressColor,
-                ),
+    return Container(
+      width: size + NeoBrutalism.borderWidth * 2 + NeoBrutalism.shadowOffsetValue,
+      height: size + NeoBrutalism.borderWidth * 2 + NeoBrutalism.shadowOffsetValue,
+      decoration: NeoBrutalism.cardDecoration(isDark: isDark),
+      padding: EdgeInsets.all(size >= 100 ? 8 : 4),
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            CustomPaint(
+              size: Size(size - (size >= 100 ? 16 : 8), size - (size >= 100 ? 16 : 8)),
+              painter: _RingPainter(
+                progress: percentage != null ? percentage! / 100 : 0,
+                progressColor: _progressColor,
+                trackColor: trackColor,
+                strokeWidth: strokeWidth,
               ),
-              if (percentage != null && size >= 100)
-                Text(
-                  'attendance',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: isDark
-                            ? AppColors.textSecondaryDark
-                            : AppColors.textSecondary,
-                      ),
-                ),
-            ],
-          ),
-        ],
+            ),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: size >= 100 ? 12 : 4),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      percentage != null
+                          ? '${percentage!.toStringAsFixed(size >= 100 ? 1 : 0)}%'
+                          : '—',
+                      style: size >= 100
+                          ? Theme.of(context).textTheme.headlineLarge?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                color: _progressColor,
+                              )
+                          : Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                color: _progressColor,
+                              ),
+                    ),
+                  ),
+                  if (percentage != null && size >= 100)
+                    Text(
+                      'ATTENDANCE',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: isDark
+                                ? AppColors.textSecondaryDark
+                                : AppColors.textSecondary,
+                            letterSpacing: 1.2,
+                          ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -96,7 +114,7 @@ class _RingPainter extends CustomPainter {
       ..color = trackColor
       ..strokeWidth = strokeWidth
       ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
+      ..strokeCap = StrokeCap.butt;
 
     canvas.drawCircle(center, radius, trackPaint);
 
@@ -106,7 +124,7 @@ class _RingPainter extends CustomPainter {
         ..color = progressColor
         ..strokeWidth = strokeWidth
         ..style = PaintingStyle.stroke
-        ..strokeCap = StrokeCap.round;
+        ..strokeCap = StrokeCap.butt;
 
       final sweepAngle = 2 * pi * progress.clamp(0.0, 1.0);
       canvas.drawArc(

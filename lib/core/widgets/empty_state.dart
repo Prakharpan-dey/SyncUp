@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../theme/neo_brutalism.dart';
 
-/// Reusable empty state widget with icon, title, subtitle, and optional action
 class EmptyState extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -31,23 +31,22 @@ class EmptyState extends StatelessWidget {
             Container(
               width: 100,
               height: 100,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(24),
+              decoration: NeoBrutalism.iconBoxDecoration(
+                isDark: isDark,
+                color: isDark
+                    ? AppColors.primaryLight.withValues(alpha: 0.15)
+                    : AppColors.primaryLight.withValues(alpha: 0.25),
               ),
               child: Icon(
                 icon,
                 size: 48,
-                color: AppColors.primary.withValues(alpha: 0.6),
+                color: AppColors.primary,
               ),
             ),
             const SizedBox(height: 24),
             Text(
               title,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleLarge
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context).textTheme.titleLarge,
               textAlign: TextAlign.center,
             ),
             if (subtitle != null) ...[

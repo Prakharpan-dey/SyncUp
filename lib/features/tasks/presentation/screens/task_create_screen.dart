@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/auth/current_user.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/neo_brutalism.dart';
 import '../../domain/entities/task.dart';
 import '../viewmodels/task_viewmodel.dart';
 
@@ -41,7 +44,7 @@ class _TaskCreateScreenState extends ConsumerState<TaskCreateScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     ref.read(taskViewModelProvider.notifier).submitNewTask(
-          userId: 'local-user', // placeholder until auth is wired
+          userId: ref.read(currentUserIdProvider),
           title: _titleCtrl.text,
           description:
               _descCtrl.text.isNotEmpty ? _descCtrl.text : null,
@@ -53,13 +56,13 @@ class _TaskCreateScreenState extends ConsumerState<TaskCreateScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final taskState = ref.watch(taskViewModelProvider);
     final isLoading = taskState.isLoading;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('New Task'),
+        title: const Text('NEW TASK'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -68,7 +71,6 @@ class _TaskCreateScreenState extends ConsumerState<TaskCreateScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Title
               TextFormField(
                 controller: _titleCtrl,
                 decoration: const InputDecoration(
@@ -85,7 +87,6 @@ class _TaskCreateScreenState extends ConsumerState<TaskCreateScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Description
               TextFormField(
                 controller: _descCtrl,
                 decoration: const InputDecoration(
@@ -98,10 +99,8 @@ class _TaskCreateScreenState extends ConsumerState<TaskCreateScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Due date picker
-              InkWell(
+              GestureDetector(
                 onTap: isLoading ? null : _pickDate,
-                borderRadius: BorderRadius.circular(12),
                 child: InputDecorator(
                   decoration: const InputDecoration(
                     labelText: 'Due Date (optional)',
@@ -113,19 +112,19 @@ class _TaskCreateScreenState extends ConsumerState<TaskCreateScreen> {
                         : 'No date selected',
                     style: TextStyle(
                       color: _dueDate != null
-                          ? theme.textTheme.bodyLarge?.color
-                          : theme.colorScheme.outline,
+                          ? (isDark ? AppColors.textPrimaryDark : AppColors.textPrimary)
+                          : (isDark ? AppColors.textSecondaryDark : AppColors.textTertiary),
                     ),
                   ),
                 ),
               ),
               const SizedBox(height: 16),
 
-              // Priority selector
               Text(
-                'Priority',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
+                'PRIORITY',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.0,
                 ),
               ),
               const SizedBox(height: 8),
@@ -133,17 +132,17 @@ class _TaskCreateScreenState extends ConsumerState<TaskCreateScreen> {
                 segments: const [
                   ButtonSegment(
                     value: TaskPriority.low,
-                    label: Text('Low'),
+                    label: Text('LOW'),
                     icon: Icon(Icons.arrow_downward_rounded, size: 16),
                   ),
                   ButtonSegment(
                     value: TaskPriority.medium,
-                    label: Text('Medium'),
+                    label: Text('MED'),
                     icon: Icon(Icons.remove_rounded, size: 16),
                   ),
                   ButtonSegment(
                     value: TaskPriority.high,
-                    label: Text('High'),
+                    label: Text('HIGH'),
                     icon: Icon(Icons.arrow_upward_rounded, size: 16),
                   ),
                 ],
@@ -155,9 +154,16 @@ class _TaskCreateScreenState extends ConsumerState<TaskCreateScreen> {
 
               if (taskState.error != null) ...[
                 const SizedBox(height: 16),
-                Text(
-                  taskState.error!,
-                  style: TextStyle(color: theme.colorScheme.error),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: NeoBrutalism.bannerDecoration(
+                    color: AppColors.error.withValues(alpha: 0.15),
+                    isDark: isDark,
+                  ),
+                  child: Text(
+                    taskState.error!,
+                    style: TextStyle(color: AppColors.error),
+                  ),
                 ),
               ],
 
@@ -170,7 +176,7 @@ class _TaskCreateScreenState extends ConsumerState<TaskCreateScreen> {
                         width: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Create Task'),
+                    : const Text('CREATE TASK'),
               ),
             ],
           ),

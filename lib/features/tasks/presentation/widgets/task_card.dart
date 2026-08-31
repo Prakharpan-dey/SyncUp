@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/neo_brutalism.dart';
 import '../../domain/entities/task.dart';
 
 class TaskCard extends StatelessWidget {
@@ -15,35 +17,36 @@ class TaskCard extends StatelessWidget {
 
   Color _priorityColor(TaskPriority priority) {
     return switch (priority) {
-      TaskPriority.high => const Color(0xFFFF6B6B),
-      TaskPriority.medium => const Color(0xFFFDAA5D),
-      TaskPriority.low => const Color(0xFF00B894),
+      TaskPriority.high => AppColors.error,
+      TaskPriority.medium => AppColors.warning,
+      TaskPriority.low => AppColors.success,
     };
   }
 
   String _priorityLabel(TaskPriority priority) {
     return switch (priority) {
-      TaskPriority.high => 'High',
-      TaskPriority.medium => 'Medium',
-      TaskPriority.low => 'Low',
+      TaskPriority.high => 'HIGH',
+      TaskPriority.medium => 'MED',
+      TaskPriority.low => 'LOW',
     };
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isCompleted = task.isCompleted;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: InkWell(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: GestureDetector(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
+        child: Container(
+          decoration: NeoBrutalism.cardDecoration(isDark: isDark),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           child: Row(
             children: [
-              // Completion checkbox
+              // Completion checkbox — square, neobrutalist
               GestureDetector(
                 onTap: onToggle,
                 child: AnimatedContainer(
@@ -51,15 +54,12 @@ class TaskCard extends StatelessWidget {
                   width: 28,
                   height: 28,
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
                     color: isCompleted
-                        ? theme.colorScheme.primary
+                        ? AppColors.primary
                         : Colors.transparent,
                     border: Border.all(
-                      color: isCompleted
-                          ? theme.colorScheme.primary
-                          : theme.colorScheme.outline,
-                      width: 2,
+                      color: isDark ? AppColors.borderDark : AppColors.border,
+                      width: NeoBrutalism.borderWidthSmall,
                     ),
                   ),
                   child: isCompleted
@@ -80,7 +80,7 @@ class TaskCard extends StatelessWidget {
                         decoration:
                             isCompleted ? TextDecoration.lineThrough : null,
                         color: isCompleted
-                            ? theme.colorScheme.outline
+                            ? (isDark ? AppColors.textSecondaryDark : AppColors.textSecondary)
                             : null,
                       ),
                       maxLines: 1,
@@ -92,8 +92,8 @@ class TaskCard extends StatelessWidget {
                         _formatDueDate(task.dueDate!),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: _isDueOverdue(task.dueDate!) && !isCompleted
-                              ? const Color(0xFFFF6B6B)
-                              : theme.colorScheme.outline,
+                              ? AppColors.error
+                              : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondary),
                         ),
                       ),
                     ],
@@ -101,18 +101,19 @@ class TaskCard extends StatelessWidget {
                 ),
               ),
 
-              // Priority badge
+              // Priority badge — chip style
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _priorityColor(task.priority).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
+                decoration: NeoBrutalism.chipDecoration(
+                  color: _priorityColor(task.priority),
+                  isDark: isDark,
                 ),
                 child: Text(
                   _priorityLabel(task.priority),
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: _priorityColor(task.priority),
-                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
                   ),
                 ),
               ),

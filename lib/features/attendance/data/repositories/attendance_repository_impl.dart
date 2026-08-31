@@ -270,7 +270,9 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
           operationType: 'DELETE',
           entityType: 'attendance_session',
           entityId: sessionId,
-          payload: {'id': sessionId},
+          // subject_id is required to build the delete URL when this is
+          // replayed from the sync queue later.
+          payload: {'id': sessionId, 'subject_id': subjectId},
           remoteFn: () => _remote.deleteSession(subjectId, sessionId),
         );
       }

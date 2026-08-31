@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/neo_brutalism.dart';
 import '../../domain/entities/task.dart';
 import '../viewmodels/task_viewmodel.dart';
 
@@ -12,7 +14,7 @@ class TaskDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final taskState = ref.watch(taskViewModelProvider);
     final task = taskState.tasks.where((t) => t.id == taskId).firstOrNull;
-    final theme = Theme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (task == null) {
       return Scaffold(
@@ -23,7 +25,7 @@ class TaskDetailScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Task Details'),
+        title: const Text('TASK DETAILS'),
         actions: [
           IconButton(
             icon: const Icon(Icons.delete_outline_rounded),
@@ -31,13 +33,13 @@ class TaskDetailScreen extends ConsumerWidget {
               showDialog(
                 context: context,
                 builder: (ctx) => AlertDialog(
-                  title: const Text('Delete Task'),
+                  title: const Text('DELETE TASK'),
                   content: const Text(
                       'Are you sure you want to delete this task?'),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(ctx),
-                      child: const Text('Cancel'),
+                      child: const Text('CANCEL'),
                     ),
                     TextButton(
                       onPressed: () {
@@ -47,10 +49,8 @@ class TaskDetailScreen extends ConsumerWidget {
                         Navigator.pop(ctx);
                         context.pop();
                       },
-                      child: Text(
-                        'Delete',
-                        style: TextStyle(color: theme.colorScheme.error),
-                      ),
+                      child: const Text('DELETE',
+                          style: TextStyle(color: AppColors.error)),
                     ),
                   ],
                 ),
@@ -64,92 +64,114 @@ class TaskDetailScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Status & Priority row
             Row(
               children: [
-                _buildChip(
-                  label: task.isCompleted ? 'Completed' : 'Pending',
-                  color: task.isCompleted
-                      ? const Color(0xFF00B894)
-                      : const Color(0xFFFDAA5D),
-                  theme: theme,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: NeoBrutalism.chipDecoration(
+                    color: task.isCompleted ? AppColors.success : AppColors.warning,
+                    isDark: isDark,
+                  ),
+                  child: Text(
+                    task.isCompleted ? 'COMPLETED' : 'PENDING',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 8),
-                _buildChip(
-                  label: _priorityLabel(task.priority),
-                  color: _priorityColor(task.priority),
-                  theme: theme,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: NeoBrutalism.chipDecoration(
+                    color: _priorityColor(task.priority),
+                    isDark: isDark,
+                  ),
+                  child: Text(
+                    _priorityLabel(task.priority),
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 20),
 
-            // Title
             Text(
               task.title,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 decoration:
                     task.isCompleted ? TextDecoration.lineThrough : null,
               ),
             ),
 
-            // Description
             if (task.description != null &&
                 task.description!.isNotEmpty) ...[
               const SizedBox(height: 12),
               Text(
                 task.description!,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: isDark
+                      ? AppColors.textSecondaryDark
+                      : AppColors.textSecondary,
                 ),
               ),
             ],
 
             const SizedBox(height: 24),
-            const Divider(),
+            Container(
+              width: double.infinity,
+              height: 2,
+              color: isDark ? AppColors.borderDark : AppColors.border,
+            ),
             const SizedBox(height: 16),
 
-            // Details
             _buildDetailRow(
+              context: context,
+              isDark: isDark,
               icon: Icons.calendar_today_rounded,
-              label: 'Due Date',
+              label: 'DUE DATE',
               value: task.dueDate != null
                   ? '${task.dueDate!.day}/${task.dueDate!.month}/${task.dueDate!.year}'
                   : 'No due date',
-              theme: theme,
             ),
             const SizedBox(height: 12),
             _buildDetailRow(
+              context: context,
+              isDark: isDark,
               icon: Icons.access_time_rounded,
-              label: 'Created',
+              label: 'CREATED',
               value:
                   '${task.createdAt.day}/${task.createdAt.month}/${task.createdAt.year}',
-              theme: theme,
             ),
             if (task.completedAt != null) ...[
               const SizedBox(height: 12),
               _buildDetailRow(
+                context: context,
+                isDark: isDark,
                 icon: Icons.check_circle_rounded,
-                label: 'Completed',
+                label: 'COMPLETED',
                 value:
                     '${task.completedAt!.day}/${task.completedAt!.month}/${task.completedAt!.year}',
-                theme: theme,
               ),
             ],
             if (task.tags.isNotEmpty) ...[
               const SizedBox(height: 12),
               _buildDetailRow(
+                context: context,
+                isDark: isDark,
                 icon: Icons.label_outline_rounded,
-                label: 'Tags',
+                label: 'TAGS',
                 value: task.tags.join(', '),
-                theme: theme,
               ),
             ],
 
             const SizedBox(height: 32),
 
-            // Toggle completion button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
@@ -165,15 +187,15 @@ class TaskDetailScreen extends ConsumerWidget {
                 ),
                 label: Text(
                   task.isCompleted
-                      ? 'Mark as Pending'
-                      : 'Mark as Complete',
+                      ? 'MARK AS PENDING'
+                      : 'MARK AS COMPLETE',
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: task.isCompleted
-                      ? theme.colorScheme.surfaceContainerHighest
-                      : const Color(0xFF00B894),
+                      ? (isDark ? AppColors.surfaceVariantDark : AppColors.surfaceVariant)
+                      : AppColors.success,
                   foregroundColor: task.isCompleted
-                      ? theme.colorScheme.onSurface
+                      ? (isDark ? AppColors.textPrimaryDark : AppColors.textPrimary)
                       : Colors.white,
                 ),
               ),
@@ -184,47 +206,29 @@ class TaskDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildChip({
-    required String label,
-    required Color color,
-    required ThemeData theme,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: theme.textTheme.labelMedium?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-
   Widget _buildDetailRow({
+    required BuildContext context,
+    required bool isDark,
     required IconData icon,
     required String label,
     required String value,
-    required ThemeData theme,
   }) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: theme.colorScheme.outline),
+        Icon(icon, size: 20,
+            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary),
         const SizedBox(width: 12),
         Text(
           '$label: ',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.outline,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+            letterSpacing: 0.5,
           ),
         ),
         Expanded(
           child: Text(
             value,
-            style: theme.textTheme.bodyMedium,
+            style: Theme.of(context).textTheme.bodyMedium,
           ),
         ),
       ],
@@ -233,17 +237,17 @@ class TaskDetailScreen extends ConsumerWidget {
 
   Color _priorityColor(TaskPriority priority) {
     return switch (priority) {
-      TaskPriority.high => const Color(0xFFFF6B6B),
-      TaskPriority.medium => const Color(0xFFFDAA5D),
-      TaskPriority.low => const Color(0xFF00B894),
+      TaskPriority.high => AppColors.error,
+      TaskPriority.medium => AppColors.warning,
+      TaskPriority.low => AppColors.success,
     };
   }
 
   String _priorityLabel(TaskPriority priority) {
     return switch (priority) {
-      TaskPriority.high => 'High',
-      TaskPriority.medium => 'Medium',
-      TaskPriority.low => 'Low',
+      TaskPriority.high => 'HIGH',
+      TaskPriority.medium => 'MEDIUM',
+      TaskPriority.low => 'LOW',
     };
   }
 }

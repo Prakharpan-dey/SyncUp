@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/neo_brutalism.dart';
 
 class StreakCard extends StatelessWidget {
   final int currentStreak;
@@ -13,24 +15,26 @@ class StreakCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Padding(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        decoration: NeoBrutalism.cardDecoration(isDark: isDark),
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            // Flame icon
+            // Flame icon — square box with neo style
             Container(
               width: 48,
               height: 48,
-              decoration: BoxDecoration(
-                color: const Color(0xFFFDAA5D).withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
+              decoration: NeoBrutalism.iconBoxDecoration(
+                color: AppColors.yellow,
+                isDark: isDark,
               ),
               child: const Icon(
                 Icons.local_fire_department_rounded,
-                color: Color(0xFFFDAA5D),
+                color: Colors.white,
                 size: 28,
               ),
             ),
@@ -48,9 +52,11 @@ class StreakCard extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    'Current streak',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.outline,
+                    'CURRENT STREAK',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1.0,
                     ),
                   ),
                 ],
@@ -58,23 +64,31 @@ class StreakCard extends StatelessWidget {
             ),
 
             // Longest streak
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '$longestStreak',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.primary,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: NeoBrutalism.flatCardDecoration(
+                color: AppColors.primary,
+                isDark: isDark,
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    '$longestStreak',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
-                ),
-                Text(
-                  'Best',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.outline,
+                  Text(
+                    'BEST',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: Colors.white.withValues(alpha: 0.85),
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.8,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),

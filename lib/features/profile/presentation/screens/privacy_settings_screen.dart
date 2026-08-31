@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/di/core_providers.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/neo_brutalism.dart';
 import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
 
 class PrivacySettingsScreen extends ConsumerStatefulWidget {
@@ -29,13 +30,18 @@ class _PrivacySettingsScreenState extends ConsumerState<PrivacySettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Privacy Settings',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('PRIVACY SETTINGS'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _SectionHeader(title: 'Who can find me in search?'),
+          Text(
+            'WHO CAN FIND ME IN SEARCH?',
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.0,
+                ),
+          ),
           const SizedBox(height: 8),
           _RadioTile(
             value: 'everyone', groupValue: _searchable,
@@ -53,7 +59,13 @@ class _PrivacySettingsScreenState extends ConsumerState<PrivacySettingsScreen> {
             onChanged: (v) => setState(() => _searchable = v),
           ),
           const SizedBox(height: 24),
-          _SectionHeader(title: 'Default sharing mode'),
+          Text(
+            'DEFAULT SHARING MODE',
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.0,
+                ),
+          ),
           const SizedBox(height: 8),
           _RadioTile(
             value: 'none', groupValue: _sharing,
@@ -79,14 +91,14 @@ class _PrivacySettingsScreenState extends ConsumerState<PrivacySettingsScreen> {
           SizedBox(
             width: double.infinity,
             height: 48,
-            child: FilledButton(
+            child: ElevatedButton(
               onPressed: _saving ? null : _save,
               child: _saving
                   ? const SizedBox(
                       width: 20, height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Save Changes'),
+                  : const Text('SAVE CHANGES'),
             ),
           ),
         ],
@@ -122,20 +134,6 @@ class _PrivacySettingsScreenState extends ConsumerState<PrivacySettingsScreen> {
   }
 }
 
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  const _SectionHeader({required this.title});
-
-  @override
-  Widget build(BuildContext context) => Text(
-        title,
-        style: Theme.of(context)
-            .textTheme
-            .titleSmall
-            ?.copyWith(fontWeight: FontWeight.w600),
-      );
-}
-
 class _RadioTile extends StatelessWidget {
   final String value, groupValue, label;
   final IconData icon;
@@ -153,26 +151,32 @@ class _RadioTile extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
-      child: ListTile(
+      child: GestureDetector(
         onTap: () => onChanged(value),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: BorderSide(
-            color: selected
-                ? AppColors.primary
-                : (isDark ? AppColors.borderDark : AppColors.border),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: selected
+              ? NeoBrutalism.selectedDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.06),
+                  isDark: isDark,
+                )
+              : NeoBrutalism.unselectedDecoration(isDark: isDark),
+          child: Row(
+            children: [
+              Icon(icon, color: selected ? AppColors.primary : null),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(label,
+                    style: TextStyle(
+                        fontWeight:
+                            selected ? FontWeight.w600 : FontWeight.normal)),
+              ),
+              if (selected)
+                const Icon(Icons.check_circle_rounded,
+                    color: AppColors.primary),
+            ],
           ),
         ),
-        tileColor: selected
-            ? AppColors.primary.withValues(alpha: 0.06)
-            : null,
-        leading: Icon(icon, color: selected ? AppColors.primary : null),
-        title: Text(label,
-            style: TextStyle(
-                fontWeight: selected ? FontWeight.w600 : FontWeight.normal)),
-        trailing: selected
-            ? const Icon(Icons.check_circle_rounded, color: AppColors.primary)
-            : null,
       ),
     );
   }
