@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/auth/current_user.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/neo_brutalism.dart';
+import '../../../../core/widgets/user_avatar.dart';
 import '../../domain/entities/friendship.dart';
 import '../viewmodels/social_viewmodel.dart';
 
@@ -21,9 +24,11 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen>
     super.initState();
     _tabCtrl = TabController(length: 2, vsync: this);
     Future.microtask(() {
+      if (!mounted) return;
       final vm = ref.read(socialViewModelProvider.notifier);
-      vm.loadPendingRequests('current-user');
-      vm.loadFriends('current-user');
+      final userId = ref.read(currentUserIdProvider);
+      vm.loadPendingRequests(userId);
+      vm.loadFriends(userId);
     });
   }
 
@@ -40,15 +45,18 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Friends',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          'FRIENDS',
+          style: TextStyle(
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.2,
+          ),
         ),
         bottom: TabBar(
           controller: _tabCtrl,
           tabs: [
-            Tab(text: 'Requests (${state.pendingRequests.length})'),
-            Tab(text: 'Friends (${state.friends.length})'),
+            Tab(text: 'REQUESTS (${state.pendingRequests.length})'),
+            Tab(text: 'FRIENDS (${state.friends.length})'),
           ],
         ),
       ),
@@ -63,7 +71,7 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen>
                       context,
                       isDark,
                       Icons.mail_outline_rounded,
-                      'No pending requests',
+                      'NO PENDING REQUESTS',
                       'Friend requests will appear here.',
                     )
                   : ListView.separated(
@@ -99,7 +107,7 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen>
                       context,
                       isDark,
                       Icons.people_outline_rounded,
-                      'No friends yet',
+                      'NO FRIENDS YET',
                       'Search for users to add friends.',
                     )
                   : ListView.separated(
@@ -112,38 +120,13 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen>
                         return Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? AppColors.surfaceDark
-                                : AppColors.surface,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: isDark
-                                  ? AppColors.borderDark
-                                  : AppColors.border,
-                            ),
-                          ),
+                          decoration: NeoBrutalism.cardDecoration(isDark: isDark),
                           child: Row(
                             children: [
-                              CircleAvatar(
-                                radius: 20,
-                                backgroundColor:
-                                    AppColors.accent.withValues(alpha: 0.12),
-                                backgroundImage: friend.photoUrl != null
-                                    ? NetworkImage(friend.photoUrl!)
-                                    : null,
-                                child: friend.photoUrl == null
-                                    ? Text(
-                                        friend.displayName.isNotEmpty
-                                            ? friend.displayName[0]
-                                                .toUpperCase()
-                                            : '?',
-                                        style: const TextStyle(
-                                          color: AppColors.accent,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      )
-                                    : null,
+                              UserAvatar(
+                                seed: friend.id,
+                                displayName: friend.displayName,
+                                size: 40,
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -157,7 +140,7 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen>
                                           .textTheme
                                           .bodyLarge
                                           ?.copyWith(
-                                              fontWeight: FontWeight.w600),
+                                              fontWeight: FontWeight.w700),
                                     ),
                                     Text(
                                       '@${friend.username}',
@@ -189,14 +172,25 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 48,
-              color: isDark ? AppColors.textSecondaryDark : AppColors.textTertiary),
+          Container(
+            width: 72,
+            height: 72,
+            decoration: NeoBrutalism.iconBoxDecoration(
+              color: isDark ? AppColors.surfaceVariantDark : AppColors.surfaceVariant,
+              isDark: isDark,
+            ),
+            child: Icon(icon, size: 36,
+                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary),
+          ),
           const SizedBox(height: 16),
           Text(title,
               style: Theme.of(context)
                   .textTheme
                   .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold)),
+                  ?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.0,
+                  )),
           const SizedBox(height: 4),
           Text(subtitle,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -228,31 +222,12 @@ class _RequestCard extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border:
-            Border.all(color: isDark ? AppColors.borderDark : AppColors.border),
-      ),
+      decoration: NeoBrutalism.cardDecoration(isDark: isDark),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-            backgroundImage: request.requesterPhotoUrl != null
-                ? NetworkImage(request.requesterPhotoUrl!)
-                : null,
-            child: request.requesterPhotoUrl == null
-                ? Text(
-                    name.isNotEmpty ? name[0].toUpperCase() : '?',
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                  )
-                : null,
-          ),
+          // The requester's own id keys the colour, so they look the same
+          // here as they will in the friends list once accepted.
+          UserAvatar(seed: request.requesterId, displayName: name, size: 44),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -260,24 +235,36 @@ class _RequestCard extends StatelessWidget {
               style: Theme.of(context)
                   .textTheme
                   .bodyLarge
-                  ?.copyWith(fontWeight: FontWeight.w600),
+                  ?.copyWith(fontWeight: FontWeight.w700),
             ),
           ),
-          IconButton.filled(
-            onPressed: onAccept,
-            icon: const Icon(Icons.check_rounded, size: 20),
-            style: IconButton.styleFrom(
-              backgroundColor: AppColors.success.withValues(alpha: 0.12),
-              foregroundColor: AppColors.success,
+          // Accept button
+          GestureDetector(
+            onTap: onAccept,
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: NeoBrutalism.chipDecoration(
+                color: AppColors.success,
+                isDark: isDark,
+              ),
+              child: const Icon(Icons.check_rounded,
+                  size: 20, color: Colors.black),
             ),
           ),
-          const SizedBox(width: 4),
-          IconButton.filled(
-            onPressed: onReject,
-            icon: const Icon(Icons.close_rounded, size: 20),
-            style: IconButton.styleFrom(
-              backgroundColor: AppColors.error.withValues(alpha: 0.12),
-              foregroundColor: AppColors.error,
+          const SizedBox(width: 8),
+          // Reject button
+          GestureDetector(
+            onTap: onReject,
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: NeoBrutalism.chipDecoration(
+                color: AppColors.error,
+                isDark: isDark,
+              ),
+              child: const Icon(Icons.close_rounded,
+                  size: 20, color: Colors.black),
             ),
           ),
         ],

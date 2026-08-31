@@ -207,7 +207,7 @@ class SocialRepositoryImpl implements SocialRepository {
     try {
       final data = await _remote.getGroupMembers(groupId);
       return Right(
-          data.map((j) => GroupMemberDto.fromJson(j).toDomain()).toList());
+          data.map((j) => GroupMemberDto.fromJson(j, groupId: groupId).toDomain()).toList());
     } catch (e) {
       if (e is DioException) return const Right([]);
       return Left(_mapError(e));

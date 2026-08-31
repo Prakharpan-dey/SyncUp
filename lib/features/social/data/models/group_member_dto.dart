@@ -14,13 +14,20 @@ class GroupMemberDto {
     this.sharingOverride = 'inherit',
   });
 
-  factory GroupMemberDto.fromJson(Map<String, dynamic> json) => GroupMemberDto(
-        groupId: json['group_id'],
-        userId: json['user_id'],
-        displayName: json['display_name'],
-        role: json['role'] ?? 'member',
-        photoUrl: json['photo_url'],
-        sharingOverride: json['sharing_override'] ?? 'inherit',
+  /// [groupId] is supplied by the caller because `GET /groups/:id/members`
+  /// does not repeat it in each row — reading `group_id` off the payload gave
+  /// null for a non-nullable field and threw.
+  factory GroupMemberDto.fromJson(
+    Map<String, dynamic> json, {
+    required String groupId,
+  }) =>
+      GroupMemberDto(
+        groupId: groupId,
+        userId: json['user_id'] as String,
+        displayName: json['display_name'] as String? ?? '',
+        role: json['role'] as String? ?? 'member',
+        photoUrl: json['photo_url'] as String?,
+        sharingOverride: json['sharing_override'] as String? ?? 'inherit',
       );
 
   Map<String, dynamic> toJson() => {
@@ -36,7 +43,17 @@ class GroupMemberDto {
         userId: userId,
         displayName: displayName,
         photoUrl: photoUrl,
-        role: GroupRole.values.byName(role),
-        sharingOverride: SharingOverride.values.byName(sharingOverride),
+        role: _role(role),
+        sharingOverride: _sharing(sharingOverride),
       );
+
+  /// The server's roles are `owner` and `member`; the app models an owner as an
+  /// admin. `byName` threw on `owner`, which took out the whole member list.
+  static GroupRole _role(String value) => switch (value) {
+        'owner' || 'admin' => GroupRole.admin,
+        _ => GroupRole.member,
+      };
+
+  static SharingOverride _sharing(String value) =>
+      SharingOverride.values.asNameMap()[value] ?? SharingOverride.inherit;
 }

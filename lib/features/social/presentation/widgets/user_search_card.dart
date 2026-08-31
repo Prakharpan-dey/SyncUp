@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/neo_brutalism.dart';
+import '../../../../core/widgets/user_avatar.dart';
 import '../../domain/entities/user_summary.dart';
 
 class UserSearchCard extends StatelessWidget {
@@ -20,36 +22,11 @@ class UserSearchCard extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark ? AppColors.borderDark : AppColors.border,
-        ),
-      ),
+      decoration: NeoBrutalism.flatCardDecoration(isDark: isDark),
       child: Row(
         children: [
-          // Avatar
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-            backgroundImage:
-                user.photoUrl != null ? NetworkImage(user.photoUrl!) : null,
-            child: user.photoUrl == null
-                ? Text(
-                    user.displayName.isNotEmpty
-                        ? user.displayName[0].toUpperCase()
-                        : '?',
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                  )
-                : null,
-          ),
+          UserAvatar(seed: user.id, displayName: user.displayName, size: 44),
           const SizedBox(width: 12),
-          // User info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,19 +49,18 @@ class UserSearchCard extends StatelessWidget {
               ],
             ),
           ),
-          // Action button
           if (requestSent)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.success.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(20),
+              decoration: NeoBrutalism.chipDecoration(
+                color: AppColors.success,
+                isDark: isDark,
               ),
               child: const Text(
-                'Sent',
+                'SENT',
                 style: TextStyle(
-                  color: AppColors.success,
-                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
                   fontSize: 12,
                 ),
               ),
@@ -93,7 +69,7 @@ class UserSearchCard extends StatelessWidget {
             FilledButton.tonalIcon(
               onPressed: onAddFriend,
               icon: const Icon(Icons.person_add_rounded, size: 18),
-              label: const Text('Add'),
+              label: const Text('ADD'),
               style: FilledButton.styleFrom(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 0),

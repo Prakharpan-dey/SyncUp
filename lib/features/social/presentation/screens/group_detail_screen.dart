@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/auth/current_user.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/neo_brutalism.dart';
+import '../../../../core/widgets/user_avatar.dart';
 import '../viewmodels/social_viewmodel.dart';
 
 class GroupDetailScreen extends ConsumerStatefulWidget {
@@ -28,23 +31,49 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Leave Group'),
+        title: const Text('LEAVE GROUP'),
         content: const Text('Are you sure you want to leave this group?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: const Text('CANCEL'),
           ),
           TextButton(
             onPressed: () {
               ref
                   .read(socialViewModelProvider.notifier)
-                  .leaveGroup(widget.groupId, 'current-user');
+                  .leaveGroup(widget.groupId, ref.read(currentUserIdProvider));
               Navigator.pop(ctx);
               context.go('/feed/groups');
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Leave'),
+            child: const Text('LEAVE'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmRemove(String userId, String displayName) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('REMOVE MEMBER'),
+        content: Text('Remove $displayName from this group?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('CANCEL'),
+          ),
+          TextButton(
+            onPressed: () {
+              ref
+                  .read(socialViewModelProvider.notifier)
+                  .removeMember(widget.groupId, userId);
+              Navigator.pop(ctx);
+            },
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('REMOVE'),
           ),
         ],
       ),
@@ -56,6 +85,9 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
     final state = ref.watch(socialViewModelProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final group = state.selectedGroup;
+    final currentUserId = ref.watch(currentUserIdProvider);
+    // GroupDto maps the API's owner_id onto createdBy.
+    final isOwner = group?.createdBy == currentUserId;
 
     if (state.isLoading && group == null) {
       return Scaffold(
@@ -73,10 +105,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          group.name,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: Text(group.name.toUpperCase()),
         actions: [
           PopupMenuButton(
             icon: const Icon(Icons.more_vert_rounded),
@@ -88,7 +117,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                     children: [
                       Icon(Icons.link_rounded, size: 20),
                       SizedBox(width: 8),
-                      Text('Copy Invite Link'),
+                      Text('COPY INVITE LINK'),
                     ],
                   ),
                 ),
@@ -99,7 +128,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                     Icon(Icons.exit_to_app_rounded,
                         color: AppColors.error, size: 20),
                     SizedBox(width: 8),
-                    Text('Leave Group',
+                    Text('LEAVE GROUP',
                         style: TextStyle(color: AppColors.error)),
                   ],
                 ),
@@ -122,42 +151,25 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Group info card
           Container(
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppColors.accent.withValues(alpha: 0.08),
-                  AppColors.primary.withValues(alpha: 0.05),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark ? AppColors.borderDark : AppColors.border,
-              ),
-            ),
+            decoration: NeoBrutalism.cardDecoration(isDark: isDark),
             child: Column(
               children: [
                 Container(
                   width: 64,
                   height: 64,
-                  decoration: BoxDecoration(
-                    color: AppColors.accent.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(16),
+                  decoration: NeoBrutalism.iconBoxDecoration(
+                    color: AppColors.accent,
+                    isDark: isDark,
                   ),
                   child: const Icon(Icons.groups_rounded,
-                      color: AppColors.accent, size: 32),
+                      color: Colors.white, size: 32),
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  group.name,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.bold),
+                  group.name.toUpperCase(),
+                  style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -173,15 +185,14 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
           ),
           const SizedBox(height: 24),
 
-          // Members header
           Row(
             children: [
               Text(
-                'Members',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold),
+                'MEMBERS',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.0,
+                    ),
               ),
               const Spacer(),
               Text(
@@ -196,7 +207,6 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
           ),
           const SizedBox(height: 12),
 
-          // Members list
           if (state.groupMembers.isEmpty)
             Center(
               child: Padding(
@@ -218,37 +228,13 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? AppColors.surfaceDark
-                        : AppColors.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color:
-                          isDark ? AppColors.borderDark : AppColors.border,
-                    ),
-                  ),
+                  decoration: NeoBrutalism.flatCardDecoration(isDark: isDark),
                   child: Row(
                     children: [
-                      CircleAvatar(
-                        radius: 18,
-                        backgroundColor:
-                            AppColors.primary.withValues(alpha: 0.12),
-                        backgroundImage: member.photoUrl != null
-                            ? NetworkImage(member.photoUrl!)
-                            : null,
-                        child: member.photoUrl == null
-                            ? Text(
-                                member.displayName.isNotEmpty
-                                    ? member.displayName[0].toUpperCase()
-                                    : '?',
-                                style: const TextStyle(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              )
-                            : null,
+                      UserAvatar(
+                        seed: member.userId,
+                        displayName: member.displayName,
+                        size: 36,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -264,20 +250,32 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
+                          decoration: NeoBrutalism.chipDecoration(
+                            color: AppColors.primary,
+                            isDark: isDark,
                           ),
                           child: Text(
-                            'Admin',
+                            'ADMIN',
                             style: Theme.of(context)
                                 .textTheme
                                 .labelSmall
                                 ?.copyWith(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
                                 ),
                           ),
+                        ),
+                      // Only the owner may remove anyone, and never themselves
+                      // — leaving is a separate action with its own succession
+                      // rules. The server enforces both regardless.
+                      if (isOwner && member.userId != currentUserId)
+                        IconButton(
+                          icon: const Icon(Icons.person_remove_rounded,
+                              size: 20),
+                          color: AppColors.error,
+                          tooltip: 'Remove from group',
+                          onPressed: () => _confirmRemove(
+                              member.userId, member.displayName),
                         ),
                     ],
                   ),

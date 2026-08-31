@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/auth/current_user.dart';
 import '../../domain/entities/friendship.dart';
 import '../../domain/entities/group.dart';
 import '../../domain/entities/group_member.dart';
@@ -122,15 +123,26 @@ class SocialViewModel extends Notifier<SocialState> {
       requestId: requestId,
       response: response,
     );
-    result.fold(
-      (f) => state = state.copyWith(error: f.message),
-      (friendship) {
+    final ok = result.fold(
+      (f) {
+        state = state.copyWith(error: f.message);
+        return false;
+      },
+      (_) {
         state = state.copyWith(
           pendingRequests:
               state.pendingRequests.where((r) => r.id != requestId).toList(),
         );
+        return true;
       },
     );
+
+    // Accepting creates a friendship, which the Friends tab reads from a
+    // separate list. Without this refresh it keeps reporting the old count
+    // until the screen is rebuilt from scratch.
+    if (ok && response == FriendshipStatus.accepted) {
+      await loadFriends(ref.read(currentUserIdProvider));
+    }
   }
 
   Future<void> removeFriend(String friendshipId, String friendUserId) async {
@@ -194,6 +206,30 @@ class SocialViewModel extends Notifier<SocialState> {
               isLoading: false, selectedGroup: group, error: f.message),
           (members) => state = state.copyWith(
               isLoading: false, selectedGroup: group, groupMembers: members),
+        );
+      },
+    );
+  }
+
+  /// Removes another member. Owner-only; the server enforces that.
+  Future<void> removeMember(String groupId, String userId) async {
+    state = state.copyWith(error: null);
+    final result = await ref
+        .read(socialRepositoryProvider)
+        .removeMember(groupId: groupId, userId: userId);
+    result.fold(
+      (f) => state = state.copyWith(error: f.message),
+      (_) {
+        // Dropped locally rather than refetching: the list is already loaded
+        // and the removal is the only change the server made. The header count
+        // comes from a separate field, so it has to move too or the card reads
+        // "3 members" above a list of two.
+        final remaining =
+            state.groupMembers.where((m) => m.userId != userId).toList();
+        state = state.copyWith(
+          groupMembers: remaining,
+          selectedGroup: state.selectedGroup
+              ?.copyWith(memberCount: remaining.length),
         );
       },
     );

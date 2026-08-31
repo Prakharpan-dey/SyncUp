@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/auth/current_user.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/neo_brutalism.dart';
 import '../viewmodels/social_viewmodel.dart';
 
 class GroupListScreen extends ConsumerStatefulWidget {
@@ -16,7 +18,10 @@ class _GroupListScreenState extends ConsumerState<GroupListScreen> {
   void initState() {
     super.initState();
     Future.microtask(() {
-      ref.read(socialViewModelProvider.notifier).loadGroups('current-user');
+      if (!mounted) return;
+      ref
+          .read(socialViewModelProvider.notifier)
+          .loadGroups(ref.read(currentUserIdProvider));
     });
   }
 
@@ -26,7 +31,7 @@ class _GroupListScreenState extends ConsumerState<GroupListScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Create Group'),
+        title: const Text('CREATE GROUP'),
         content: TextField(
           controller: nameCtrl,
           decoration: const InputDecoration(
@@ -39,19 +44,19 @@ class _GroupListScreenState extends ConsumerState<GroupListScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: const Text('CANCEL'),
           ),
           FilledButton(
             onPressed: () {
               if (nameCtrl.text.trim().isNotEmpty) {
                 ref.read(socialViewModelProvider.notifier).createGroup(
                       name: nameCtrl.text.trim(),
-                      createdBy: 'current-user',
+                      createdBy: ref.read(currentUserIdProvider),
                     );
                 Navigator.pop(ctx);
               }
             },
-            child: const Text('Create'),
+            child: const Text('CREATE'),
           ),
         ],
       ),
@@ -65,10 +70,7 @@ class _GroupListScreenState extends ConsumerState<GroupListScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Groups',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: const Text('GROUPS'),
       ),
       body: state.isLoading && state.groups.isEmpty
           ? const Center(child: CircularProgressIndicator())
@@ -77,47 +79,33 @@ class _GroupListScreenState extends ConsumerState<GroupListScreen> {
               : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
                   itemCount: state.groups.length,
-                  separatorBuilder: (_, _) =>
-                      const SizedBox(height: 8),
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final group = state.groups[index];
-                    return InkWell(
-                      onTap: () =>
-                          context.go('/feed/groups/${group.id}'),
-                      borderRadius: BorderRadius.circular(12),
+                    return GestureDetector(
+                      onTap: () => context.go('/feed/groups/${group.id}'),
                       child: Container(
                         padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? AppColors.surfaceDark
-                              : AppColors.surface,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: isDark
-                                ? AppColors.borderDark
-                                : AppColors.border,
-                          ),
-                        ),
+                        decoration:
+                            NeoBrutalism.cardDecoration(isDark: isDark),
                         child: Row(
                           children: [
                             Container(
                               width: 44,
                               height: 44,
-                              decoration: BoxDecoration(
-                                color:
-                                    AppColors.accent.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(12),
+                              decoration: NeoBrutalism.iconBoxDecoration(
+                                color: AppColors.accent,
+                                isDark: isDark,
                               ),
                               child: const Icon(
                                 Icons.group_rounded,
-                                color: AppColors.accent,
+                                color: Colors.white,
                               ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     group.name,
@@ -157,9 +145,7 @@ class _GroupListScreenState extends ConsumerState<GroupListScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showCreateGroupDialog,
         icon: const Icon(Icons.add_rounded),
-        label: const Text('New Group'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+        label: const Text('NEW GROUP'),
       ),
     );
   }
@@ -174,23 +160,23 @@ class _GroupListScreenState extends ConsumerState<GroupListScreen> {
             Container(
               width: 100,
               height: 100,
-              decoration: BoxDecoration(
-                color: AppColors.accent.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(24),
+              decoration: NeoBrutalism.iconBoxDecoration(
+                color: AppColors.accent,
+                isDark: isDark,
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.groups_rounded,
                 size: 48,
-                color: AppColors.accent.withValues(alpha: 0.6),
+                color: Colors.white,
               ),
             ),
             const SizedBox(height: 24),
             Text(
-              'No groups yet',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleLarge
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              'NO GROUPS YET',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.0,
+                  ),
             ),
             const SizedBox(height: 8),
             Text(

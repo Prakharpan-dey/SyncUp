@@ -16,14 +16,20 @@ class GroupDto {
     this.updatedAt,
   });
 
+  /// The API calls the owner `owner_id`; reading `created_by` yielded null for
+  /// a non-nullable field and threw, so creating a group and listing groups
+  /// both failed even though the server had done the work.
+  ///
+  /// `member_count` is not returned by any group endpoint, so it stays 0.
   factory GroupDto.fromJson(Map<String, dynamic> json) => GroupDto(
-        id: json['id'],
-        name: json['name'],
-        createdBy: json['created_by'],
-        inviteToken: json['invite_token'],
-        memberCount: json['member_count'] ?? 0,
-        createdAt: json['created_at'],
-        updatedAt: json['updated_at'],
+        id: json['id'] as String,
+        name: json['name'] as String,
+        createdBy:
+            json['owner_id'] as String? ?? json['created_by'] as String? ?? '',
+        inviteToken: json['invite_token'] as String?,
+        memberCount: json['member_count'] as int? ?? 0,
+        createdAt: json['created_at'] as String?,
+        updatedAt: json['updated_at'] as String?,
       );
 
   Map<String, dynamic> toJson() => {

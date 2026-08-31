@@ -4,25 +4,36 @@ class SocialRemoteDataSource {
   final Dio _dio;
   SocialRemoteDataSource(this._dio);
 
+  /// Reads a list response.
+  ///
+  /// Every list endpoint here returns a bare JSON array. These methods used to
+  /// unwrap an envelope (`res.data['friends']`, `['requests']`, `['groups']`),
+  /// which indexes a List with a String and throws — the repositories caught it
+  /// and reported an empty list, so friends, pending requests, groups, members
+  /// and user search all silently rendered as empty.
+  static List<Map<String, dynamic>> _list(dynamic data) {
+    if (data is! List) return const [];
+    return data.whereType<Map>().map(Map<String, dynamic>.from).toList();
+  }
+
   // Users
 
   Future<List<Map<String, dynamic>>> searchUsers(String query) async {
     final res =
         await _dio.get('/users/search', queryParameters: {'q': query});
-    return List<Map<String, dynamic>>.from(res.data['users'] ?? []);
+    return _list(res.data);
   }
 
   // Friends
 
   Future<List<Map<String, dynamic>>> getFriends(String userId) async {
-    final res = await _dio.get('/friends', queryParameters: {'user_id': userId});
-    return List<Map<String, dynamic>>.from(res.data['friends'] ?? []);
+    final res = await _dio.get('/friends');
+    return _list(res.data);
   }
 
   Future<List<Map<String, dynamic>>> getPendingRequests(String userId) async {
-    final res = await _dio
-        .get('/friends/requests', queryParameters: {'user_id': userId});
-    return List<Map<String, dynamic>>.from(res.data['requests'] ?? []);
+    final res = await _dio.get('/friends/requests');
+    return _list(res.data);
   }
 
   Future<Map<String, dynamic>> sendFriendRequest(
@@ -48,8 +59,8 @@ class SocialRemoteDataSource {
   // Groups
 
   Future<List<Map<String, dynamic>>> getGroups(String userId) async {
-    final res = await _dio.get('/groups', queryParameters: {'user_id': userId});
-    return List<Map<String, dynamic>>.from(res.data['groups'] ?? []);
+    final res = await _dio.get('/groups');
+    return _list(res.data);
   }
 
   Future<Map<String, dynamic>> createGroup(Map<String, dynamic> data) async {
@@ -64,11 +75,11 @@ class SocialRemoteDataSource {
 
   Future<List<Map<String, dynamic>>> getGroupMembers(String groupId) async {
     final res = await _dio.get('/groups/$groupId/members');
-    return List<Map<String, dynamic>>.from(res.data['members'] ?? []);
+    return _list(res.data);
   }
 
   Future<void> joinGroup(String inviteToken, String userId) async {
-    await _dio.post('/groups/join/$inviteToken', data: {'user_id': userId});
+    await _dio.post('/groups/join/$inviteToken');
   }
 
   Future<void> leaveGroup(String groupId, String userId) async {

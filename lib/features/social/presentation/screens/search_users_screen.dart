@@ -1,7 +1,8 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/auth/current_user.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/neo_brutalism.dart';
 import '../viewmodels/social_viewmodel.dart';
 import '../widgets/user_search_card.dart';
 
@@ -14,24 +15,36 @@ class SearchUsersScreen extends ConsumerStatefulWidget {
 
 class _SearchUsersScreenState extends ConsumerState<SearchUsersScreen> {
   final _searchCtrl = TextEditingController();
-  Timer? _debounce;
+
+  /// Whether a lookup has been run for the handle currently in the field.
+  ///
+  /// Lookups are exact, so every partially typed username is a guaranteed
+  /// miss. Searching as the user types would flash "no match" through the
+  /// whole handle and spend a request per keystroke, so nothing runs until
+  /// the user asks for it.
+  bool _searched = false;
 
   @override
   void dispose() {
     _searchCtrl.dispose();
-    _debounce?.cancel();
     super.dispose();
   }
 
-  void _onSearchChanged(String query) {
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 400), () {
-      if (query.trim().length >= 2) {
-        ref.read(socialViewModelProvider.notifier).searchUsers(query);
-      } else {
-        ref.read(socialViewModelProvider.notifier).clearSearch();
-      }
-    });
+  void _onChanged(String _) {
+    // A result belongs to the handle it was searched for; once the text moves
+    // on, showing it — or a stale "no match" — would be misleading.
+    if (_searched) {
+      ref.read(socialViewModelProvider.notifier).clearSearch();
+    }
+    setState(() => _searched = false);
+  }
+
+  void _submit() {
+    final handle = _searchCtrl.text.trim();
+    if (handle.isEmpty) return;
+    FocusScope.of(context).unfocus();
+    setState(() => _searched = true);
+    ref.read(socialViewModelProvider.notifier).searchUsers(handle);
   }
 
   @override
@@ -41,9 +54,12 @@ class _SearchUsersScreenState extends ConsumerState<SearchUsersScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Search Users',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          'SEARCH USERS',
+          style: TextStyle(
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.2,
+          ),
         ),
       ),
       body: Column(
@@ -53,9 +69,10 @@ class _SearchUsersScreenState extends ConsumerState<SearchUsersScreen> {
             padding: const EdgeInsets.all(16),
             child: TextField(
               controller: _searchCtrl,
-              onChanged: _onSearchChanged,
+              onChanged: _onChanged,
+              onSubmitted: (_) => _submit(),
               decoration: InputDecoration(
-                hintText: 'Search by username or display name...',
+                hintText: 'Enter exact username',
                 prefixIcon: const Icon(Icons.search_rounded),
                 suffixIcon: _searchCtrl.text.isNotEmpty
                     ? IconButton(
@@ -74,28 +91,38 @@ class _SearchUsersScreenState extends ConsumerState<SearchUsersScreen> {
             ),
           ),
 
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _searchCtrl.text.trim().isEmpty ? null : _submit,
+                icon: const Icon(Icons.search_rounded),
+                label: const Text('SEARCH'),
+              ),
+            ),
+          ),
+
           // Error (offline message)
           if (state.error != null)
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.warning.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-                border:
-                    Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+              decoration: NeoBrutalism.bannerDecoration(
+                color: AppColors.warning,
+                isDark: isDark,
               ),
               child: Row(
                 children: [
                   const Icon(Icons.wifi_off_rounded,
-                      color: AppColors.warning, size: 20),
+                      color: Colors.black, size: 20),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       state.error!,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.warning,
-                            fontWeight: FontWeight.w500,
+                            color: Colors.black,
+                            fontWeight: FontWeight.w600,
                           ),
                     ),
                   ),
@@ -122,7 +149,8 @@ class _SearchUsersScreenState extends ConsumerState<SearchUsersScreen> {
                               ref
                                   .read(socialViewModelProvider.notifier)
                                   .sendFriendRequest(
-                                    requesterId: 'current-user',
+                                    requesterId:
+                                        ref.read(currentUserIdProvider),
                                     receiverId: user.id,
                                   );
                             },
@@ -136,27 +164,46 @@ class _SearchUsersScreenState extends ConsumerState<SearchUsersScreen> {
   }
 
   Widget _buildEmptyState(BuildContext context, bool isDark) {
-    final hasSearched = _searchCtrl.text.trim().length >= 2;
+    final hasSearched = _searched;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              hasSearched
-                  ? Icons.person_search_rounded
-                  : Icons.search_rounded,
-              size: 48,
-              color: isDark
-                  ? AppColors.textSecondaryDark
-                  : AppColors.textTertiary,
+            Container(
+              width: 72,
+              height: 72,
+              decoration: NeoBrutalism.iconBoxDecoration(
+                color: isDark ? AppColors.surfaceVariantDark : AppColors.surfaceVariant,
+                isDark: isDark,
+              ),
+              child: Icon(
+                hasSearched
+                    ? Icons.person_search_rounded
+                    : Icons.search_rounded,
+                size: 36,
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondary,
+              ),
             ),
             const SizedBox(height: 16),
             Text(
               hasSearched
-                  ? 'No users found'
-                  : 'Search for friends by username\nor display name',
+                  ? 'NO MATCH'
+                  : 'ADD A FRIEND',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.0,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              hasSearched
+                  ? 'No one has that username.\nCheck the spelling and try again.'
+                  : 'Enter a friend’s exact username.\nUsernames are unique.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: isDark
