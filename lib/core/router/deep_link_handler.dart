@@ -48,10 +48,23 @@ class DeepLinkHandler {
   /// The custom scheme puts the first segment in the host and the rest in path
   /// segments, while the https form puts everything in path segments —
   /// normalize both before matching.
+  /// The only web host whose links this app will act on.
+  ///
+  /// The manifest's verified App Link filter is already scoped to it, so the OS
+  /// will not hand us another domain's link — but `toRoute` is also reachable
+  /// from anything that produces a URI, and honouring `https://anywhere/groups/
+  /// join/x` as a genuine invite is not a decision worth leaving implicit.
+  static const _webHost = 'syncup.app';
+
   @visibleForTesting
   static String? toRoute(Uri uri) {
+    final isCustomScheme = uri.scheme == 'syncup';
+    final isOwnWebLink =
+        (uri.scheme == 'https' || uri.scheme == 'http') && uri.host == _webHost;
+    if (!isCustomScheme && !isOwnWebLink) return null;
+
     final segments = <String>[
-      if (uri.scheme == 'syncup' && uri.host.isNotEmpty) uri.host,
+      if (isCustomScheme && uri.host.isNotEmpty) uri.host,
       ...uri.pathSegments,
     ].where((s) => s.isNotEmpty).toList();
 
