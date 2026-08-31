@@ -22,13 +22,20 @@ class AuthInterceptor extends Interceptor {
   /// The refresh currently in flight, shared by every request waiting on it.
   Future<String?>? _refreshFuture;
 
-  AuthInterceptor(this._storage)
-    : _refreshDio = Dio(
-        BaseOptions(
-          baseUrl: AppConstants.apiBaseUrl,
-          connectTimeout: const Duration(seconds: 10),
-        ),
-      );
+  /// [refreshDio] exists so tests can supply a client with a stub adapter.
+  ///
+  /// The refresh call deliberately goes out on its own Dio rather than the one
+  /// this interceptor is attached to — otherwise a 401 on the refresh would
+  /// re-enter this same interceptor and recurse.
+  AuthInterceptor(this._storage, {Dio? refreshDio})
+    : _refreshDio =
+          refreshDio ??
+          Dio(
+            BaseOptions(
+              baseUrl: AppConstants.apiBaseUrl,
+              connectTimeout: const Duration(seconds: 10),
+            ),
+          );
 
   void dispose() => _sessionExpired.close();
 
