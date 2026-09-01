@@ -175,7 +175,7 @@ class _SubjectCreateScreenState extends ConsumerState<SubjectCreateScreen> {
 
             Wrap(
               spacing: 8,
-              children: [50, 60, 75, 80, 85].map((pct) {
+              children: [50, 60, 75, 80].map((pct) {
                 final isSelected = _thresholdPct.round() == pct;
                 return ActionChip(
                   label: Text('$pct%'),

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_snack_bar.dart';
 import '../../../../core/theme/neo_brutalism.dart';
 import '../../domain/entities/attendance_session.dart';
 import '../viewmodels/attendance_viewmodel.dart';
@@ -436,7 +437,25 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                   separatorBuilder: (_, _) => const SizedBox(height: 7),
                   itemBuilder: (context, index) {
                     final session = sessions[index];
-                    return Container(
+                    // A mis-tap on Present/Absent was previously permanent —
+                    // nothing in the UI could remove a record. Undo rather than
+                    // a confirm dialog, since correcting a slip should not cost
+                    // a second decision.
+                    return Dismissible(
+                      key: ValueKey(session.id),
+                      direction: DismissDirection.endToStart,
+                      onDismissed: (_) => _deleteSession(session),
+                      background: Container(
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.only(right: 16),
+                        decoration: BoxDecoration(
+                          color: AppColors.error,
+                          border: Border.all(color: borderColor, width: 3),
+                        ),
+                        child: const Icon(Icons.delete_rounded,
+                            color: Colors.black),
+                      ),
+                      child: Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 11, vertical: 10),
                       decoration: BoxDecoration(
@@ -478,11 +497,41 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                           ),
                         ],
                       ),
+                      ),
                     );
                   },
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// Removes a record, offering Undo for a few seconds.
+  ///
+  /// The whole stack below this already existed — repository, offline queue and
+  /// `DELETE /subjects/:id/sessions/:sessionId` — only the gesture was missing.
+  Future<void> _deleteSession(AttendanceSession session) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final vm = ref.read(attendanceViewModelProvider.notifier);
+
+    await vm.deleteSession(session.id);
+
+    showAppSnackBarOn(
+      messenger,
+      '${DateFormat('EEE d MMM').format(session.sessionDate)} removed',
+      action: SnackBarAction(
+        label: 'UNDO',
+        // Re-logs rather than restoring the old row: the record is already
+        // gone locally and on the server, and a fresh one carries the same
+        // date and status, which is all the percentage depends on.
+        onPressed: () => vm.logAttendance(
+          subjectId: session.subjectId,
+          date: session.sessionDate,
+          status: session.isPresent
+              ? AttendanceStatus.present
+              : AttendanceStatus.absent,
         ),
       ),
     );
