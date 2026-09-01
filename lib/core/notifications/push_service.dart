@@ -109,6 +109,23 @@ class PushService {
     }
   }
 
+  /// Whether the OS currently allows notifications for this app.
+  ///
+  /// Every in-app preference is moot if this is false, so the preferences
+  /// screen reads it to say so rather than presenting switches that cannot
+  /// take effect.
+  Future<AuthorizationStatus> permissionStatus() async {
+    if (!_firebaseAvailable) return AuthorizationStatus.notDetermined;
+    try {
+      final settings =
+          await FirebaseMessaging.instance.getNotificationSettings();
+      return settings.authorizationStatus;
+    } catch (e) {
+      debugPrint('Push: could not read permission status: $e');
+      return AuthorizationStatus.notDetermined;
+    }
+  }
+
   /// Requests permission, then registers. Returns whether push is now allowed.
   Future<bool> requestPermissionAndRegister() async {
     if (!_firebaseAvailable) return false;
