@@ -6,6 +6,7 @@ import '../../../../core/auth/guest_session.dart';
 import '../../../../core/di/core_providers.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/neo_brutalism.dart';
+import '../../../../core/widgets/app_snack_bar.dart';
 import '../../../../core/widgets/user_avatar.dart';
 import '../../../../core/theme/theme_mode_provider.dart';
 import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
@@ -273,26 +274,51 @@ class ProfileScreen extends ConsumerWidget {
           ),
           FilledButton(
             onPressed: () async {
+              // Captured before any await: the dialog closes mid-flow, so
+              // reaching for a context afterwards is unsafe.
+              final messenger = ScaffoldMessenger.of(context);
+
               if (!ref.read(connectivityServiceProvider).isOnline) {
                 if (ctx.mounted) Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('You are offline. Connect to save.')),
+                showAppSnackBarOn(
+                    messenger, 'You are offline. Connect to save.',
+                    isError: true);
+                return;
+              }
+
+              final name = nameCtrl.text.trim();
+              if (name.isEmpty) {
+                showAppSnackBarOn(messenger, 'Display name cannot be empty.',
+                    isError: true);
+                return;
+              }
+
+              final fields = <String, dynamic>{
+                'display_name': name,
+                // Sent even when blank so an entry can be cleared. Skipping
+                // empty values meant college could be set but never unset.
+                'college': collegeCtrl.text.trim(),
+              };
+
+              final saved = await ref
+                  .read(authViewModelProvider.notifier)
+                  .updateProfile(fields);
+
+              // The result used to be discarded and the dialog popped either
+              // way, so a rejected save looked identical to a successful one —
+              // which is why editing appeared to do nothing.
+              if (!saved) {
+                showAppSnackBarOn(
+                  messenger,
+                  ref.read(authViewModelProvider).error ??
+                      'Could not save. Try again.',
+                  isError: true,
                 );
                 return;
               }
-              final fields = <String, dynamic>{};
-              if (nameCtrl.text.trim().isNotEmpty) {
-                fields['display_name'] = nameCtrl.text.trim();
-              }
-              if (collegeCtrl.text.trim().isNotEmpty) {
-                fields['college'] = collegeCtrl.text.trim();
-              }
-              if (fields.isNotEmpty) {
-                await ref
-                    .read(authViewModelProvider.notifier)
-                    .updateProfile(fields);
-              }
+
               if (ctx.mounted) Navigator.pop(ctx);
+              showAppSnackBarOn(messenger, 'Profile updated');
             },
             child: const Text('SAVE'),
           ),

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/di/core_providers.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/neo_brutalism.dart';
 import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../../../../core/widgets/app_snack_bar.dart';
 
 class PrivacySettingsScreen extends ConsumerStatefulWidget {
   const PrivacySettingsScreen({super.key});
@@ -109,9 +111,8 @@ class _PrivacySettingsScreenState extends ConsumerState<PrivacySettingsScreen> {
   Future<void> _save() async {
     if (!ref.read(connectivityServiceProvider).isOnline) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('You are offline. Connect to save.')),
-        );
+        showAppSnackBar(context, 'You are offline. Connect to save.',
+            isError: true);
       }
       return;
     }
@@ -122,13 +123,14 @@ class _PrivacySettingsScreenState extends ConsumerState<PrivacySettingsScreen> {
     });
     setState(() => _saving = false);
     if (mounted) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(success
-              ? 'Privacy settings saved'
-              : 'Failed to save. Please try again.'),
-        ),
+      // Entered with context.go(), which replaces the location rather
+      // than pushing a route, so there is nothing on the stack to pop —
+      // Navigator.pop() here was silently doing nothing.
+      context.go('/profile');
+      showAppSnackBar(
+        context,
+        success ? 'Privacy settings saved' : 'Failed to save. Please try again.',
+        isError: !success,
       );
     }
   }
@@ -155,25 +157,31 @@ class _RadioTile extends StatelessWidget {
         onTap: () => onChanged(value),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          // A 6%-opacity tint was previously the only fill, which is invisible
+          // against the light background — the check icon was doing all the
+          // work. Selection is a solid fill now, which is also what the rest of
+          // the app does to say "this one".
           decoration: selected
               ? NeoBrutalism.selectedDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.06),
+                  color: AppColors.primary,
                   isDark: isDark,
                 )
               : NeoBrutalism.unselectedDecoration(isDark: isDark),
           child: Row(
             children: [
-              Icon(icon, color: selected ? AppColors.primary : null),
+              Icon(icon, color: selected ? Colors.white : null),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(label,
-                    style: TextStyle(
-                        fontWeight:
-                            selected ? FontWeight.w600 : FontWeight.normal)),
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: selected ? Colors.white : null,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
+                  ),
+                ),
               ),
               if (selected)
-                const Icon(Icons.check_circle_rounded,
-                    color: AppColors.primary),
+                const Icon(Icons.check_circle_rounded, color: Colors.white),
             ],
           ),
         ),
