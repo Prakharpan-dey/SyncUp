@@ -13,6 +13,7 @@ class UserDto {
   final int? graduationYear;
   final String privacySearchable;
   final String privacySharingDefault;
+  final Map<String, bool> notificationSettings;
 
   const UserDto({
     required this.id,
@@ -27,6 +28,7 @@ class UserDto {
     this.graduationYear,
     this.privacySearchable = 'everyone',
     this.privacySharingDefault = 'summary',
+    this.notificationSettings = const {},
   });
 
   factory UserDto.fromJson(Map<String, dynamic> json) => UserDto(
@@ -43,6 +45,15 @@ class UserDto {
     privacySearchable: json['privacy_searchable'] as String? ?? 'everyone',
     privacySharingDefault:
         json['privacy_sharing_default'] as String? ?? 'summary',
+    // Sent as a JSON object; a value that is not a bool is dropped rather than
+    // crashing the parse, since one bad key must not cost the whole user.
+    notificationSettings: switch (json['notification_settings']) {
+      final Map<String, dynamic> m => {
+          for (final e in m.entries)
+            if (e.value is bool) e.key: e.value as bool,
+        },
+      _ => const <String, bool>{},
+    },
   );
 
   User toDomain() => User(
@@ -60,6 +71,7 @@ class UserDto {
     graduationYear: graduationYear,
     privacySearchable: privacySearchable,
     privacySharingDefault: privacySharingDefault,
+    notificationSettings: notificationSettings,
   );
 
   Map<String, dynamic> toJson() => {
@@ -75,5 +87,6 @@ class UserDto {
     'graduation_year': graduationYear,
     'privacy_searchable': privacySearchable,
     'privacy_sharing_default': privacySharingDefault,
+    'notification_settings': notificationSettings,
   };
 }

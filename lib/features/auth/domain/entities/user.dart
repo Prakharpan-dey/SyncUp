@@ -14,6 +14,12 @@ class User extends Equatable {
   final String privacySearchable;
   final String privacySharingDefault;
 
+  /// Per-category push toggles, e.g. `{'task_reminders': true}`.
+  ///
+  /// Stored server-side as a single `notification_settings` JSON object rather
+  /// than one column per category, so new categories need no migration.
+  final Map<String, bool> notificationSettings;
+
   const User({
     required this.id,
     required this.username,
@@ -27,7 +33,13 @@ class User extends Equatable {
     this.graduationYear,
     this.privacySearchable = 'everyone',
     this.privacySharingDefault = 'summary',
+    this.notificationSettings = const {},
   });
+
+  /// Whether [category] is on, treating an absent key as enabled — a user who
+  /// has never opened the preferences screen should still get notifications.
+  bool notificationEnabled(String category) =>
+      notificationSettings[category] ?? true;
 
   bool get isEmailVerified => emailVerifiedAt != null;
 

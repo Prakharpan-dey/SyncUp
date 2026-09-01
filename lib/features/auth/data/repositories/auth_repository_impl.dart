@@ -248,7 +248,12 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Either<Failure, User>> updateProfile(Map<String, dynamic> fields) async {
     try {
       final data = await _remote.updateProfile(fields);
-      return Right(UserDto.fromJson(data['user']).toDomain());
+      // PATCH /users/me returns the user object directly, unlike /auth/* which
+      // wraps it in {user: …}. Reading data['user'] here got null and the cast
+      // threw, so every profile save failed after the server had already
+      // committed it — the write landed, the response parse did not.
+      final json = data['user'] as Map<String, dynamic>? ?? data;
+      return Right(UserDto.fromJson(json).toDomain());
     } on DioException catch (e) {
       return Left(ErrorMapper.fromDioException(e));
     } catch (e) {
