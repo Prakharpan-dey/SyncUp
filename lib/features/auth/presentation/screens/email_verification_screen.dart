@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/widgets/app_snack_bar.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/neo_brutalism.dart';
 import '../viewmodels/auth_viewmodel.dart';
@@ -52,11 +53,41 @@ class _EmailVerificationScreenState
     setState(() => _busy = false);
 
     if (ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Email verified. Social features unlocked.')),
-      );
+      showAppSnackBar(context, 'Email verified. Social features unlocked.');
       context.go('/home');
     }
+  }
+
+  /// Re-reads the account to see whether the emailed link has been opened.
+  ///
+  /// Previously this button called checkAuthStatus() fire-and-forget: `_busy`
+  /// never flipped, so the spinner the button already had wired up never
+  /// showed, and nothing said whether anything had happened. On an account
+  /// still unverified that reads as the app hanging.
+  Future<void> _recheck() async {
+    setState(() {
+      _busy = true;
+      _notice = null;
+    });
+
+    await ref.read(authViewModelProvider.notifier).checkAuthStatus();
+
+    if (!mounted) return;
+    setState(() => _busy = false);
+
+    final verified =
+        ref.read(authViewModelProvider).user?.isEmailVerified ?? false;
+
+    if (verified) {
+      showAppSnackBar(context, 'Email verified. Social features unlocked.');
+      context.go('/home');
+      return;
+    }
+
+    // The router will not move while the account is unverified, so without
+    // this the screen simply sat there looking stuck.
+    setState(() => _notice =
+        'Still not verified. Open the link in your inbox, then try again.');
   }
 
   Future<void> _resend() async {
@@ -162,10 +193,7 @@ class _EmailVerificationScreenState
               ],
               const SizedBox(height: 32),
               ElevatedButton(
-                onPressed: _busy
-                    ? null
-                    : () =>
-                        ref.read(authViewModelProvider.notifier).checkAuthStatus(),
+                onPressed: _busy ? null : _recheck,
                 child: _busy
                     ? const SizedBox(
                         width: 20,

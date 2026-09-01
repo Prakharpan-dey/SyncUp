@@ -16,7 +16,12 @@ class ThemeModeNotifier extends Notifier<ThemeMode> {
     return switch (value) {
       'light' => ThemeMode.light,
       'dark' => ThemeMode.dark,
-      _ => ThemeMode.system,
+      'system' => ThemeMode.system,
+      // A fresh install opens light rather than following the device. The
+      // neobrutalist palette was drawn light-first, and a first run that opens
+      // dark on a dark-mode phone is not the introduction we want. Anyone who
+      // picks a mode keeps it — this only covers "nothing stored yet".
+      _ => ThemeMode.light,
     };
   }
 
