@@ -7,6 +7,8 @@ import '../../../../core/theme/neo_brutalism.dart';
 import '../../../../core/utils/validators.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../widgets/auth_error_banner.dart';
+import '../widgets/password_field.dart';
+import '../../../../core/widgets/app_snack_bar.dart';
 
 /// Reached from the link in a password-reset email.
 ///
@@ -48,11 +50,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     setState(() => _saving = false);
 
     if (ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Password updated. Sign in with your new password.'),
-        ),
-      );
+      showAppSnackBar(
+          context, 'Password updated. Sign in with your new password.');
       context.go('/auth/sign-in');
     }
   }
@@ -97,25 +96,17 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                       ),
                 ),
                 const SizedBox(height: 28),
-                TextFormField(
+                PasswordField(
                   controller: _passwordCtrl,
+                  labelText: 'New password',
                   enabled: !_saving,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'New password',
-                    prefixIcon: Icon(Icons.lock_outline_rounded),
-                  ),
                   validator: Validators.password,
                 ),
                 const SizedBox(height: 16),
-                TextFormField(
+                PasswordField(
                   controller: _confirmCtrl,
+                  labelText: 'Confirm new password',
                   enabled: !_saving,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Confirm new password',
-                    prefixIcon: Icon(Icons.lock_outline_rounded),
-                  ),
                   validator: (value) => value != _passwordCtrl.text
                       ? 'Passwords do not match'
                       : null,

@@ -7,6 +7,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../../../auth/presentation/widgets/auth_error_banner.dart';
+import '../../../auth/presentation/widgets/password_field.dart';
+import '../../../../core/widgets/app_snack_bar.dart';
 
 class ChangePasswordScreen extends ConsumerStatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -57,11 +59,8 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     });
 
     if (error == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Password changed. Other devices have been signed out.'),
-        ),
-      );
+      showAppSnackBar(
+          context, 'Password changed. Other devices have been signed out.');
       context.pop();
     }
   }
@@ -89,37 +88,26 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                       ),
                 ),
                 const SizedBox(height: 24),
-                TextFormField(
+                PasswordField(
                   controller: _currentCtrl,
+                  labelText: 'Current password',
                   enabled: !_saving,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Current password',
-                    prefixIcon: Icon(Icons.lock_outline_rounded),
-                  ),
-                  validator: (v) =>
-                      (v == null || v.isEmpty) ? 'Enter your current password' : null,
+                  validator: (v) => (v == null || v.isEmpty)
+                      ? 'Enter your current password'
+                      : null,
                 ),
                 const SizedBox(height: 16),
-                TextFormField(
+                PasswordField(
                   controller: _newCtrl,
+                  labelText: 'New password',
                   enabled: !_saving,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'New password',
-                    prefixIcon: Icon(Icons.key_rounded),
-                  ),
                   validator: Validators.password,
                 ),
                 const SizedBox(height: 16),
-                TextFormField(
+                PasswordField(
                   controller: _confirmCtrl,
+                  labelText: 'Confirm new password',
                   enabled: !_saving,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Confirm new password',
-                    prefixIcon: Icon(Icons.key_rounded),
-                  ),
                   validator: (v) =>
                       v != _newCtrl.text ? 'Passwords do not match' : null,
                   onFieldSubmitted: (_) => _submit(),

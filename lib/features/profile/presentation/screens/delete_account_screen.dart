@@ -5,6 +5,8 @@ import '../../../../core/di/core_providers.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/neo_brutalism.dart';
 import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../../../auth/presentation/widgets/password_field.dart';
+import '../../../../core/widgets/app_snack_bar.dart';
 
 class DeleteAccountScreen extends ConsumerStatefulWidget {
   const DeleteAccountScreen({super.key});
@@ -41,9 +43,9 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
 
   void _confirmDelete() {
     if (!ref.read(connectivityServiceProvider).isOnline) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('You are offline. Connect to delete your account.')),
-      );
+      showAppSnackBar(
+          context, 'You are offline. Connect to delete your account.',
+          isError: true);
       return;
     }
     showDialog(
@@ -76,11 +78,9 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
                   context.go('/auth/sign-in');
                 } else {
                   final error = ref.read(authViewModelProvider).error;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(error ?? 'Failed to delete account'),
-                    ),
-                  );
+                  showAppSnackBar(
+                      context, error ?? 'Failed to delete account',
+                      isError: true);
                 }
               }
             },
@@ -180,14 +180,10 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
                   ),
             ),
             const SizedBox(height: 12),
-            TextField(
+            PasswordField(
               controller: _passwordCtrl,
+              labelText: 'Your password',
               enabled: !_deleting,
-              obscureText: true,
-              decoration: const InputDecoration(
-                hintText: 'Your password',
-                prefixIcon: Icon(Icons.lock_outline_rounded),
-              ),
             ),
             const Spacer(),
             SizedBox(

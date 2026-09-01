@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/neo_brutalism.dart';
 import '../../../../core/utils/validators.dart';
 import '../viewmodels/auth_viewmodel.dart';
+import '../widgets/password_field.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
   const SignInScreen({super.key});
@@ -89,14 +90,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   enabled: !isLoading,
                 ),
                 const SizedBox(height: 16),
-                TextFormField(
+                PasswordField(
                   controller: _passwordCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Password',
-                    prefixIcon: Icon(Icons.lock_outlined),
-                  ),
                   validator: Validators.password,
-                  obscureText: true,
                   enabled: !isLoading,
                 ),
                 if (authState.error != null) ...[
