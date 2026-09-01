@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/neo_brutalism.dart';
 import '../../../../core/utils/validators.dart';
 import '../viewmodels/auth_viewmodel.dart';
+import '../widgets/password_field.dart';
 
 class SignUpScreen extends ConsumerStatefulWidget {
   const SignUpScreen({super.key});
@@ -16,6 +17,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
+  final _confirmPasswordCtrl = TextEditingController();
   final _usernameCtrl = TextEditingController();
   final _displayNameCtrl = TextEditingController();
 
@@ -23,6 +25,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   void dispose() {
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
+    _confirmPasswordCtrl.dispose();
     _usernameCtrl.dispose();
     _displayNameCtrl.dispose();
     super.dispose();
@@ -127,22 +130,29 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   enabled: !isLoading,
                 ),
                 const SizedBox(height: 16),
-                TextFormField(
+                PasswordField(
                   controller: _passwordCtrl,
                   onChanged: (_) => ref
                       .read(authViewModelProvider.notifier)
                       .clearErrors(),
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    prefixIcon: const Icon(Icons.lock_outlined),
-                    // Server-reported problem for this specific input, e.g.
-                    // "Username already taken" — shown under the field that
-                    // caused it rather than in the banner at the bottom.
-                    errorText: authState.fieldErrors['password'],
-                  ),
+                  // Server-reported problem for this specific input, e.g.
+                  // "Username already taken" — shown under the field that
+                  // caused it rather than in the banner at the bottom.
+                  errorText: authState.fieldErrors['password'],
                   validator: Validators.password,
-                  obscureText: true,
                   enabled: !isLoading,
+                ),
+                const SizedBox(height: 16),
+                // A typo here is only discovered at the next sign-in, by which
+                // point the password is unknown — so it is worth confirming
+                // once at creation.
+                PasswordField(
+                  controller: _confirmPasswordCtrl,
+                  labelText: 'Confirm Password',
+                  enabled: !isLoading,
+                  validator: (value) => value != _passwordCtrl.text
+                      ? 'Passwords do not match'
+                      : null,
                 ),
                 // Only when the failure could not be attributed to a field —
                 // otherwise the same sentence appears twice, once under the

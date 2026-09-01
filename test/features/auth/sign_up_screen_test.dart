@@ -41,11 +41,20 @@ void main() {
     await tester.enterText(find.byType(TextFormField).at(1), 'freshuser2026');
     await tester.enterText(find.byType(TextFormField).at(2), 'fresh@example.com');
     await tester.enterText(find.byType(TextFormField).at(3), 'PushTest!2026x');
+    // Confirm password — must match, or client validation blocks submit before
+    // the server is ever reached.
+    await tester.enterText(find.byType(TextFormField).at(4), 'PushTest!2026x');
     await tester.pump();
   }
 
   Future<void> submit(WidgetTester tester) async {
-    await tester.tap(find.widgetWithText(ElevatedButton, 'CREATE ACCOUNT'));
+    final button = find.widgetWithText(ElevatedButton, 'CREATE ACCOUNT');
+    // The form is taller than the 800x600 test surface now that it carries a
+    // confirm-password field, so the button has to be scrolled to before it
+    // can be tapped.
+    await tester.ensureVisible(button);
+    await tester.pumpAndSettle();
+    await tester.tap(button);
     await tester.pumpAndSettle();
   }
 
