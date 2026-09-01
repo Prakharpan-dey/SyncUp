@@ -25,7 +25,11 @@ class _PrivacySettingsScreenState extends ConsumerState<PrivacySettingsScreen> {
     super.initState();
     final user = ref.read(authViewModelProvider).user;
     _searchable = user?.privacySearchable ?? 'everyone';
-    _sharing = user?.privacySharingDefault ?? 'summary';
+    // 'selected' was removed: there is no per-task sharing model behind it, so
+    // it always behaved exactly like 'all'. Anyone already stored that way is
+    // shown 'all' rather than a list with nothing selected.
+    final stored = user?.privacySharingDefault ?? 'summary';
+    _sharing = stored == 'selected' ? 'all' : stored;
   }
 
   @override
@@ -77,11 +81,6 @@ class _PrivacySettingsScreenState extends ConsumerState<PrivacySettingsScreen> {
           _RadioTile(
             value: 'summary', groupValue: _sharing,
             label: 'Summary stats only', icon: Icons.analytics_rounded,
-            onChanged: (v) => setState(() => _sharing = v),
-          ),
-          _RadioTile(
-            value: 'selected', groupValue: _sharing,
-            label: 'Selected tasks', icon: Icons.checklist_rounded,
             onChanged: (v) => setState(() => _sharing = v),
           ),
           _RadioTile(
