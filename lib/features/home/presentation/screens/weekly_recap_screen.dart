@@ -7,6 +7,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../tasks/presentation/viewmodels/task_viewmodel.dart';
 import '../../../tasks/domain/entities/task.dart';
 import '../../../attendance/presentation/viewmodels/attendance_viewmodel.dart';
+import '../../../../core/widgets/app_snack_bar.dart';
 
 class WeeklyRecapScreen extends ConsumerWidget {
   const WeeklyRecapScreen({super.key});
@@ -271,11 +272,7 @@ class WeeklyRecapScreen extends ConsumerWidget {
                     flex: 2,
                     child: GestureDetector(
                       onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content:
-                                  Text('Sharing coming soon!')),
-                        );
+                        showAppSnackBar(context, 'Sharing coming soon!');
                       },
                       child: Container(
                         padding:

@@ -10,6 +10,7 @@ import '../../../../core/theme/neo_brutalism.dart';
 import '../../../auth/di/auth_providers.dart';
 import '../../../auth/domain/entities/auth_session.dart';
 import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../../../../core/widgets/app_snack_bar.dart';
 
 /// Lists devices with a live session and lets the user end them.
 ///
@@ -110,11 +111,7 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
     if (mounted) context.go('/auth/sign-in');
   }
 
-  void _snack(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
-  }
+  void _snack(String message) => showAppSnackBar(context, message);
 
   @override
   Widget build(BuildContext context) {

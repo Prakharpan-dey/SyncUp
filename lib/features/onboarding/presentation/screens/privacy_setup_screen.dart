@@ -5,6 +5,7 @@ import '../../../../core/di/core_providers.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/neo_brutalism.dart';
 import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../../../../core/widgets/app_snack_bar.dart';
 
 class PrivacySetupScreen extends ConsumerStatefulWidget {
   const PrivacySetupScreen({super.key});
@@ -139,9 +140,8 @@ class _PrivacySetupScreenState extends ConsumerState<PrivacySetupScreen> {
   Future<void> _onGetStarted() async {
     if (!ref.read(connectivityServiceProvider).isOnline) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('You are offline. Connect to continue.')),
-        );
+        showAppSnackBar(context, 'You are offline. Connect to continue.',
+            isError: true);
       }
       return;
     }

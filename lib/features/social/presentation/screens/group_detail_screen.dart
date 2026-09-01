@@ -7,6 +7,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/neo_brutalism.dart';
 import '../../../../core/widgets/user_avatar.dart';
 import '../viewmodels/social_viewmodel.dart';
+import '../../../../core/widgets/app_snack_bar.dart';
 
 class GroupDetailScreen extends ConsumerStatefulWidget {
   final String groupId;
@@ -138,9 +139,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
               if (value == 'copy_invite' && group.inviteToken != null) {
                 Clipboard.setData(
                     ClipboardData(text: group.inviteToken!));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Invite link copied!')),
-                );
+                showAppSnackBar(context, 'Invite link copied!');
               } else if (value == 'leave') {
                 _confirmLeave();
               }
