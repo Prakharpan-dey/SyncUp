@@ -54,9 +54,7 @@ class TaskCard extends StatelessWidget {
                   width: 28,
                   height: 28,
                   decoration: BoxDecoration(
-                    color: isCompleted
-                        ? AppColors.primary
-                        : Colors.transparent,
+                    color: isCompleted ? AppColors.primary : Colors.transparent,
                     border: Border.all(
                       color: isDark ? AppColors.borderDark : AppColors.border,
                       width: NeoBrutalism.borderWidthSmall,
@@ -77,10 +75,13 @@ class TaskCard extends StatelessWidget {
                     Text(
                       task.title,
                       style: theme.textTheme.bodyLarge?.copyWith(
-                        decoration:
-                            isCompleted ? TextDecoration.lineThrough : null,
+                        decoration: isCompleted
+                            ? TextDecoration.lineThrough
+                            : null,
                         color: isCompleted
-                            ? (isDark ? AppColors.textSecondaryDark : AppColors.textSecondary)
+                            ? (isDark
+                                  ? AppColors.textSecondaryDark
+                                  : AppColors.textSecondary)
                             : null,
                       ),
                       maxLines: 1,
@@ -93,7 +94,9 @@ class TaskCard extends StatelessWidget {
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: _isDueOverdue(task.dueDate!) && !isCompleted
                               ? AppColors.error
-                              : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondary),
+                              : (isDark
+                                    ? AppColors.textSecondaryDark
+                                    : AppColors.textSecondary),
                         ),
                       ),
                     ],
@@ -111,7 +114,7 @@ class TaskCard extends StatelessWidget {
                 child: Text(
                   _priorityLabel(task.priority),
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: Colors.white,
+                    color: Colors.black,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.5,
                   ),
