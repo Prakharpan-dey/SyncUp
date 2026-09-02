@@ -190,12 +190,16 @@ class TaskRepositoryImpl implements TaskRepository {
       );
 
       _box.put(_domainToOb(toggled));
-      final json = TaskDto.fromDomain(toggled).toJson();
+      // TOGGLE, not UPDATE: the update endpoint cannot change status, so a
+      // PATCH here left the server's copy pending forever. Replaying a toggle
+      // offline is safe because the queue preserves order — completing and
+      // un-completing while offline replays as two flips and lands where the
+      // device already is.
       _pushOrEnqueueAsync(
-        operationType: 'UPDATE',
+        operationType: 'TOGGLE',
         entityId: task.id,
-        payload: json,
-        remoteFn: () => _remote.updateTask(task.id, json),
+        payload: const {},
+        remoteFn: () => _remote.toggleTask(task.id),
       );
       return Right(toggled);
     } catch (e) {

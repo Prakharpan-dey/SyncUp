@@ -20,11 +20,20 @@ class TaskDto {
     completedAt: json['completed_at'],
   );
 
+  /// The wire payload for `POST /tasks` and `PATCH /tasks/:id`.
+  ///
+  /// Optional fields are omitted when unset rather than sent as null: the API
+  /// validates them with Zod `.optional()`, which accepts an absent key but
+  /// rejects an explicit null. Sending `description: null` and
+  /// `due_date: null` — the shape of every task created without those fields
+  /// filled in — made the server answer 422, and the repository's silent catch
+  /// turned that into a task that lived only on the device.
   Map<String, dynamic> toJson() => {
     'id': id, 'user_id': userId, 'title': title,
-    'description': description, 'due_date': dueDate,
     'priority': priority, 'status': status, 'tags': tags,
-    'completed_at': completedAt,
+    if (description != null) 'description': description,
+    if (dueDate != null) 'due_date': dueDate,
+    if (completedAt != null) 'completed_at': completedAt,
   };
 
   Task toDomain() => Task(

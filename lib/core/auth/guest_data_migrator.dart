@@ -9,6 +9,7 @@ import '../storage/models/task_ob.dart';
 import '../storage/object_box_store.dart';
 import '../sync/sync_manager.dart';
 import '../utils/date_helpers.dart';
+import '../../features/tasks/data/models/task_dto.dart';
 import '../../objectbox.g.dart';
 
 /// Re-keys locally-created rows from a guest identity to a real account id.
@@ -61,24 +62,26 @@ class GuestDataMigrator {
     box.putMany(rows);
 
     for (final row in rows) {
-      // Payload mirrors TaskDto.toJson() — keep the two in step.
+      // Built through TaskDto rather than by hand: this map used to mirror
+      // TaskDto.toJson() by convention and drifted from it, sending nulls the
+      // API rejects. One source for the wire shape means it cannot drift again.
       await _syncManager.enqueue(
         operationType: 'CREATE',
         entityType: 'task',
         entityId: row.id,
-        payload: {
-          'id': row.id,
-          'user_id': accountId,
-          'title': row.title,
-          'description': row.description,
-          'due_date': row.dueDate != null
+        payload: TaskDto(
+          id: row.id,
+          userId: accountId,
+          title: row.title,
+          description: row.description,
+          dueDate: row.dueDate != null
               ? DateHelpers.formatApiDate(row.dueDate!)
               : null,
-          'priority': row.priority,
-          'status': row.status,
-          'tags': row.tags,
-          'completed_at': row.completedAt?.toIso8601String(),
-        },
+          priority: row.priority,
+          status: row.status,
+          tags: row.tags,
+          completedAt: row.completedAt?.toIso8601String(),
+        ).toJson(),
       );
     }
     return rows.length;

@@ -134,6 +134,8 @@ class SyncManager {
         await _dio.post('/tasks', data: payload);
       case ('task', 'UPDATE'):
         await _dio.patch('/tasks/$id', data: payload);
+      case ('task', 'TOGGLE'):
+        await _dio.post('/tasks/$id/toggle', data: const {});
       case ('task', 'DELETE'):
         await _dio.delete('/tasks/$id');
 
