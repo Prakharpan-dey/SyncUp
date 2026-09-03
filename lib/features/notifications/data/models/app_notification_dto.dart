@@ -36,7 +36,6 @@ class AppNotificationDto {
       'friend_request': NotificationType.friendRequest,
       'reaction': NotificationType.reaction,
       'comment': NotificationType.comment,
-      'daily_digest': NotificationType.dailyDigest,
     };
 
     return AppNotification(

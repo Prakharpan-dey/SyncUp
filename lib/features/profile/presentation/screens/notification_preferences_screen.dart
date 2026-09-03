@@ -27,13 +27,11 @@ class _NotificationPreferencesScreenState
   static const _kAttendanceWarnings = 'attendance_warnings';
   static const _kFriendRequests = 'friend_requests';
   static const _kReactions = 'reactions';
-  static const _kDailyDigest = 'daily_digest';
 
   late bool _taskReminders;
   late bool _attendanceWarnings;
   late bool _friendRequests;
   late bool _reactions;
-  late bool _dailyDigest;
   bool _saving = false;
 
   /// Null until read. Every switch below is inert unless this is authorized.
@@ -53,7 +51,6 @@ class _NotificationPreferencesScreenState
     _reactions = user?.notificationEnabled(_kReactions) ?? true;
     // Off unless explicitly enabled: a daily 8am push is not something to
     // opt someone into by default.
-    _dailyDigest = user?.notificationSettings[_kDailyDigest] ?? false;
 
     unawaited(_readPermission());
   }
@@ -135,23 +132,6 @@ class _NotificationPreferencesScreenState
             value: _reactions,
             onChanged: (v) => setState(() => _reactions = v),
           ),
-          const SizedBox(height: 20),
-          Text(
-            'DIGEST',
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.0,
-                ),
-          ),
-          const SizedBox(height: 8),
-          _ToggleTile(
-            icon: Icons.summarize_rounded,
-            iconColor: AppColors.success,
-            title: 'Daily Digest',
-            subtitle: 'Summary at 8 AM — tasks due & attendance',
-            value: _dailyDigest,
-            onChanged: (v) => setState(() => _dailyDigest = v),
-          ),
           const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
@@ -190,7 +170,6 @@ class _NotificationPreferencesScreenState
         _kAttendanceWarnings: _attendanceWarnings,
         _kFriendRequests: _friendRequests,
         _kReactions: _reactions,
-        _kDailyDigest: _dailyDigest,
       },
     });
 

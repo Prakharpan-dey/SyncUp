@@ -1,12 +1,17 @@
 import 'package:equatable/equatable.dart';
 
+/// Mirrors the API's `notification_type` enum, minus `daily_digest`.
+///
+/// The digest was a switch with nothing behind it — no producer and no
+/// scheduler — so it promised a daily summary that was never sent. The value
+/// remains in the Postgres enum, since dropping one is a destructive
+/// migration, but nothing creates one.
 enum NotificationType {
   taskReminder,
   attendanceWarning,
   friendRequest,
   reaction,
   comment,
-  dailyDigest,
 }
 
 class AppNotification extends Equatable {

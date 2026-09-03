@@ -19,14 +19,56 @@ class SubjectDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
+  /// The day PRESENT/ABSENT records against. Defaults to today.
+  ///
+  /// Previously both buttons passed `DateTime.now()`, so a class you forgot to
+  /// mark could never be recorded — the API has always accepted any
+  /// `session_date`, and upserts on (subject, date), so this was only ever a
+  /// limitation of this screen.
+  late DateTime _markDate;
+
   @override
   void initState() {
     super.initState();
+    _markDate = _today();
     Future.microtask(() {
       ref
           .read(attendanceViewModelProvider.notifier)
           .loadSessions(widget.subjectId);
     });
+  }
+
+  /// Midnight today. Sessions are date-only, so the time component would only
+  /// create spurious differences between two marks on the same day.
+  DateTime _today() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
+  }
+
+  bool get _isMarkingToday => _markDate == _today();
+
+  /// How the chosen day reads on the button strip.
+  String get _markDateLabel {
+    if (_isMarkingToday) return 'TODAY';
+    final yesterday = _today().subtract(const Duration(days: 1));
+    if (_markDate == yesterday) return 'YESTERDAY';
+    return DateFormat('EEE d MMM').format(_markDate).toUpperCase();
+  }
+
+  Future<void> _pickMarkDate() async {
+    final today = _today();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _markDate,
+      // A term's worth of backfill. Future dates are not offered: you cannot
+      // have attended a class that has not happened.
+      firstDate: today.subtract(const Duration(days: 180)),
+      lastDate: today,
+      helpText: 'MARK ATTENDANCE FOR',
+    );
+    if (picked != null && mounted) {
+      setState(() => _markDate = DateTime(picked.year, picked.month, picked.day));
+    }
   }
 
   void _confirmDeleteSubject() {
@@ -297,6 +339,67 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                       thresholdPct: subject.thresholdPct,
                     ),
 
+                    // Which day PRESENT/ABSENT will record against. Always
+                    // visible rather than hidden behind a long-press, so a mark
+                    // against a back-dated day can never be a surprise.
+                    GestureDetector(
+                      onTap: _pickMarkDate,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: _isMarkingToday
+                              ? Colors.transparent
+                              : AppColors.warning,
+                          border: Border.all(color: borderColor, width: 3),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.event_rounded,
+                                size: 18, color: borderColor),
+                            const SizedBox(width: 8),
+                            Text(
+                              'MARKING FOR',
+                              style: GoogleFonts.jetBrainsMono(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.5,
+                                color: borderColor,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              _markDateLabel,
+                              style: GoogleFonts.bigShoulders(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                                color: borderColor,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Icon(Icons.arrow_drop_down_rounded,
+                                size: 22, color: borderColor),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (!_isMarkingToday) ...[
+                      const SizedBox(height: 6),
+                      GestureDetector(
+                        onTap: () => setState(() => _markDate = _today()),
+                        child: Text(
+                          'BACK TO TODAY',
+                          style: GoogleFonts.jetBrainsMono(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            decoration: TextDecoration.underline,
+                            color: borderColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 10),
+
                     // PRESENT / ABSENT buttons
                     Row(
                       children: [
@@ -308,7 +411,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                                       attendanceViewModelProvider.notifier)
                                   .logAttendance(
                                     subjectId: widget.subjectId,
-                                    date: DateTime.now(),
+                                    date: _markDate,
                                     status: AttendanceStatus.present,
                                   );
                             },
@@ -349,7 +452,7 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
                                       attendanceViewModelProvider.notifier)
                                   .logAttendance(
                                     subjectId: widget.subjectId,
-                                    date: DateTime.now(),
+                                    date: _markDate,
                                     status: AttendanceStatus.absent,
                                   );
                             },
