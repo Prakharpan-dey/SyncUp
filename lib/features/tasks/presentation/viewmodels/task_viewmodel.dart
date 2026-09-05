@@ -41,6 +41,49 @@ class TaskListState {
   /// for "DONE TODAY".
   int get dueTodayCount =>
       tasks.where((t) => t.dueDate != null && DateHelpers.isToday(t.dueDate!)).length;
+
+  /// The pending tasks worth drawing, with each repeating series collapsed to
+  /// the one occurrence it is next due on.
+  ///
+  /// Generation materializes a fortnight ahead so reminders can be scheduled
+  /// offline and the streak has real rows to count — but that is storage, not
+  /// a to-do list. Drawing it verbatim meant creating a single daily habit
+  /// filled UPCOMING with fourteen identical rows.
+  ///
+  /// Days already missed are deliberately left alone. They are real work the
+  /// user did not do, they already live in their own collapsed section, and
+  /// folding them away would put rows beyond the reach of ticking or deleting.
+  List<Task> visiblePending({DateTime? now}) {
+    final at = now ?? DateTime.now();
+    final soonestOfSeries = <String, Task>{};
+    final rest = <Task>[];
+
+    for (final task in tasks) {
+      if (task.isCompleted) continue;
+      final seriesId = task.seriesId;
+      final due = task.dueAt;
+
+      if (seriesId == null || (due != null && due.isBefore(at))) {
+        rest.add(task);
+        continue;
+      }
+
+      final incumbent = soonestOfSeries[seriesId];
+      if (incumbent == null || _isSooner(due, incumbent.dueAt)) {
+        soonestOfSeries[seriesId] = task;
+      }
+    }
+
+    return [...rest, ...soonestOfSeries.values];
+  }
+}
+
+/// Nulls sort last: an occurrence always carries a date, but a row without one
+/// must not win the comparison by default and hide the dated occurrences.
+bool _isSooner(DateTime? candidate, DateTime? incumbent) {
+  if (candidate == null) return false;
+  if (incumbent == null) return true;
+  return candidate.isBefore(incumbent);
 }
 
 class TaskViewModel extends Notifier<TaskListState> {
@@ -92,6 +135,7 @@ class TaskViewModel extends Notifier<TaskListState> {
     TaskPriority priority = TaskPriority.medium,
     List<String> tags = const [],
     int? dueMinutes,
+    String? sharingOverride,
   }) async {
     state = state.copyWith(isLoading: true, error: null);
     final result = await ref.read(createTaskUseCaseProvider)(
@@ -102,6 +146,7 @@ class TaskViewModel extends Notifier<TaskListState> {
       priority: priority,
       tags: tags,
       dueMinutes: dueMinutes,
+      sharingOverride: sharingOverride,
     );
     await result.fold(
       (f) async => state = state.copyWith(isLoading: false, error: f.message),

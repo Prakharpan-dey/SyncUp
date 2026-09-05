@@ -12,6 +12,9 @@ import '../widgets/stats_card.dart';
 import '../widgets/streak_card.dart';
 import '../../../../core/utils/streak.dart';
 
+/// How many completed tasks the list draws before collapsing to a count.
+const kCompletedShown = 20;
+
 class TaskListScreen extends ConsumerStatefulWidget {
   const TaskListScreen({super.key});
 
@@ -162,8 +165,19 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
   }
 
   Widget _buildTaskList(TaskListState taskState, bool isDark) {
-    final pendingTasks = taskState.tasks.where((t) => !t.isCompleted).toList();
-    final completedTasks = taskState.tasks.where((t) => t.isCompleted).toList();
+    // Collapsed, not filtered: a repeating series contributes the single
+    // occurrence it is next due on, so one daily habit is one row rather than
+    // the fortnight of rows generation has already materialized.
+    final pendingTasks = taskState.visiblePending();
+    // Newest first and bounded. This rendered every task ever ticked, in
+    // ObjectBox insertion order, as a full TaskCard each — a daily habit adds
+    // 365 of them a year and the section became the whole screen. The rows all
+    // still exist; only what is drawn is capped.
+    final completedTasks = taskState.tasks.where((t) => t.isCompleted).toList()
+      ..sort((a, b) => (b.completedAt ?? b.updatedAt)
+          .compareTo(a.completedAt ?? a.updatedAt));
+    final shownCompleted = completedTasks.take(kCompletedShown).toList();
+    final hiddenCompleted = completedTasks.length - shownCompleted.length;
 
     // Grouped rather than one flat PENDING list. Repeating tasks materialise an
     // occurrence a day for a fortnight ahead, and missed ones are kept on
@@ -194,9 +208,11 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         children: [
           if (taskState.tasks.isNotEmpty) ...[
             StatsCard(
-              totalTasks: taskState.tasks.length,
-              completedTasks: taskState.completedCount,
-              pendingTasks: taskState.pendingCount,
+              // Counts what the list actually draws. Using every row made a
+              // single new daily habit read "15 tasks, 15 pending".
+              totalTasks: pendingTasks.length + completedTasks.length,
+              completedTasks: completedTasks.length,
+              pendingTasks: pendingTasks.length,
             ),
             const SizedBox(height: 8),
             StreakCard(
@@ -226,13 +242,25 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                 ),
               ),
             ),
-            ...completedTasks.map((task) => TaskCard(
+            ...shownCompleted.map((task) => TaskCard(
                   task: task,
                   onTap: () => context.push('/tasks/${task.id}'),
                   onToggle: () => ref
                       .read(taskViewModelProvider.notifier)
                       .toggleCompletion(task),
                 )),
+            if (hiddenCompleted > 0)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+                child: Text(
+                  '+$hiddenCompleted older completed',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: isDark
+                            ? AppColors.textSecondaryDark
+                            : AppColors.textSecondary,
+                      ),
+                ),
+              ),
           ],
         ],
       ),
