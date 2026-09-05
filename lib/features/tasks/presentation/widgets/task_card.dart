@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/neo_brutalism.dart';
 import '../../domain/entities/task.dart';
+import '../../../../core/utils/date_helpers.dart';
 
 class TaskCard extends StatelessWidget {
   final Task task;
@@ -89,15 +90,35 @@ class TaskCard extends StatelessWidget {
                     ),
                     if (task.dueDate != null) ...[
                       const SizedBox(height: 2),
-                      Text(
-                        _formatDueDate(task.dueDate!),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: _isDueOverdue(task.dueDate!) && !isCompleted
-                              ? AppColors.error
-                              : (isDark
-                                    ? AppColors.textSecondaryDark
-                                    : AppColors.textSecondary),
-                        ),
+                      Row(
+                        children: [
+                          if (task.isRecurring) ...[
+                            Icon(
+                              Icons.repeat_rounded,
+                              size: 13,
+                              color: isDark
+                                  ? AppColors.textSecondaryDark
+                                  : AppColors.textSecondary,
+                            ),
+                            const SizedBox(width: 4),
+                          ],
+                          Flexible(
+                            child: Text(
+                              _formatDue(task),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                // isOverdue already accounts for completion and
+                                // for a date-only task being due at day's end.
+                                color: task.isOverdue
+                                    ? AppColors.error
+                                    : (isDark
+                                        ? AppColors.textSecondaryDark
+                                        : AppColors.textSecondary),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ],
@@ -127,20 +148,31 @@ class TaskCard extends StatelessWidget {
     );
   }
 
-  String _formatDueDate(DateTime date) {
+  /// The due line: which day, plus the time when one is set.
+  ///
+  /// Overdue is decided by [Task.isOverdue] rather than by the day alone —
+  /// a task due today at 21:00 is not overdue at 09:00, and one with no time
+  /// is not overdue until its day is over.
+  String _formatDue(Task task) {
+    final date = task.dueDate!;
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final due = DateTime(date.year, date.month, date.day);
     final diff = due.difference(today).inDays;
-    if (diff == 0) return 'Due today';
-    if (diff == 1) return 'Due tomorrow';
-    if (diff == -1) return 'Due yesterday';
-    if (diff < 0) return 'Overdue by ${-diff}d';
-    if (diff <= 7) return 'Due in ${diff}d';
-    return '${date.day}/${date.month}/${date.year}';
-  }
 
-  bool _isDueOverdue(DateTime date) {
-    return date.isBefore(DateTime.now());
+    final at = task.dueMinutes != null
+        ? ' · ${DateHelpers.formatApiTime(task.dueMinutes!)}'
+        : '';
+
+    if (diff == 0) {
+      // A time that has already passed today reads as overdue, not "due today".
+      if (task.isOverdue) return 'Overdue$at';
+      return 'Due today$at';
+    }
+    if (diff == 1) return 'Due tomorrow$at';
+    if (diff == -1) return 'Due yesterday$at';
+    if (diff < 0) return 'Overdue by ${-diff}d';
+    if (diff <= 7) return 'Due in ${diff}d$at';
+    return '${date.day}/${date.month}/${date.year}$at';
   }
 }
