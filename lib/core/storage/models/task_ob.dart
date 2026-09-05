@@ -16,6 +16,16 @@ class TaskOB {
   List<String> tags;
   @Property(type: PropertyType.date)
   DateTime? completedAt;
+
+  /// The repeating rule this task was generated from, or null for a one-off.
+  String? seriesId;
+
+  /// Local time of day the task is due, as minutes past midnight (0..1439).
+  ///
+  /// Minutes rather than a `DateTime` or a string: it stores natively, needs no
+  /// parsing at the three call sites that do arithmetic on it, and cannot hold
+  /// a nonsense value like 25:99.
+  int? dueMinutes;
   bool isSynced;
   @Property(type: PropertyType.date)
   DateTime updatedAt;
@@ -33,6 +43,8 @@ class TaskOB {
     this.status = 'pending',
     this.tags = const [],
     this.completedAt,
+    this.seriesId,
+    this.dueMinutes,
     this.isSynced = false,
     DateTime? updatedAt,
     DateTime? createdAt,

@@ -18,6 +18,7 @@ import 'core/storage/models/attendance_session_ob.dart';
 import 'core/storage/models/subject_ob.dart';
 import 'core/storage/models/sync_queue_item_ob.dart';
 import 'core/storage/models/task_ob.dart';
+import 'core/storage/models/task_series_ob.dart';
 
 export 'package:objectbox/objectbox.dart'; // so that callers only have to import this file
 
@@ -201,7 +202,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(4, 747617318096413486),
     name: 'TaskOB',
-    lastPropertyId: const obx_int.IdUid(13, 4173909836098834722),
+    lastPropertyId: const obx_int.IdUid(15, 7374834658510376535),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -283,6 +284,125 @@ final _entities = <obx_int.ModelEntity>[
         type: 10,
         flags: 0,
       ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(14, 1467189320373728968),
+        name: 'seriesId',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(15, 7374834658510376535),
+        name: 'dueMinutes',
+        type: 6,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
+  obx_int.ModelEntity(
+    id: const obx_int.IdUid(5, 6068920260359004829),
+    name: 'TaskSeriesOB',
+    lastPropertyId: const obx_int.IdUid(16, 8526004714203986435),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 4409939326026774891),
+        name: 'obId',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 259320515799104608),
+        name: 'id',
+        type: 9,
+        flags: 2080,
+        indexId: const obx_int.IdUid(4, 6774363322577663843),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 3870875760961645266),
+        name: 'userId',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(4, 8770969338682926991),
+        name: 'title',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(5, 5852601435444405016),
+        name: 'description',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(6, 636469865923319009),
+        name: 'priority',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(7, 9062812246907844060),
+        name: 'tags',
+        type: 30,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(8, 5046404125608095323),
+        name: 'weekdaysCsv',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(9, 8556761250401781418),
+        name: 'dueMinutes',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(10, 3341887517960147282),
+        name: 'startsOn',
+        type: 10,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(11, 4189281802128147881),
+        name: 'endsOn',
+        type: 10,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(12, 6378851240253062535),
+        name: 'active',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(13, 5579855447216262253),
+        name: 'generatedThrough',
+        type: 10,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(14, 7618214664689941708),
+        name: 'isSynced',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(15, 5751637608518537484),
+        name: 'updatedAt',
+        type: 10,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(16, 8526004714203986435),
+        name: 'createdAt',
+        type: 10,
+        flags: 0,
+      ),
     ],
     relations: <obx_int.ModelRelation>[],
     backlinks: <obx_int.ModelBacklink>[],
@@ -332,8 +452,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
     // Typically, this is done with `dart run build_runner build`.
     generatorVersion: obx_int.GeneratorVersion.v2025_12_16,
     entities: _entities,
-    lastEntityId: const obx_int.IdUid(4, 747617318096413486),
-    lastIndexId: const obx_int.IdUid(3, 6888479911234210361),
+    lastEntityId: const obx_int.IdUid(5, 6068920260359004829),
+    lastIndexId: const obx_int.IdUid(4, 6774363322577663843),
     lastRelationId: const obx_int.IdUid(0, 0),
     lastSequenceId: const obx_int.IdUid(0, 0),
     retiredEntityUids: const [],
@@ -587,7 +707,10 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final tagsOffset = fbb.writeList(
           object.tags.map(fbb.writeString).toList(growable: false),
         );
-        fbb.startTable(14);
+        final seriesIdOffset = object.seriesId == null
+            ? null
+            : fbb.writeString(object.seriesId!);
+        fbb.startTable(16);
         fbb.addInt64(0, object.obId);
         fbb.addOffset(1, idOffset);
         fbb.addOffset(2, userIdOffset);
@@ -601,6 +724,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addBool(10, object.isSynced);
         fbb.addInt64(11, object.updatedAt.millisecondsSinceEpoch);
         fbb.addInt64(12, object.createdAt.millisecondsSinceEpoch);
+        fbb.addOffset(13, seriesIdOffset);
+        fbb.addInt64(14, object.dueMinutes);
         fbb.finish(fbb.endTable());
         return object.obId;
       },
@@ -663,17 +788,161 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final createdAtParam = DateTime.fromMillisecondsSinceEpoch(
           const fb.Int64Reader().vTableGet(buffer, rootOffset, 28, 0),
         );
-        final object = TaskOB(
+        final object =
+            TaskOB(
+                obId: obIdParam,
+                id: idParam,
+                userId: userIdParam,
+                title: titleParam,
+                description: descriptionParam,
+                dueDate: dueDateParam,
+                priority: priorityParam,
+                status: statusParam,
+                tags: tagsParam,
+                completedAt: completedAtParam,
+                isSynced: isSyncedParam,
+                updatedAt: updatedAtParam,
+                createdAt: createdAtParam,
+              )
+              ..seriesId = const fb.StringReader(
+                asciiOptimization: true,
+              ).vTableGetNullable(buffer, rootOffset, 30)
+              ..dueMinutes = const fb.Int64Reader().vTableGetNullable(
+                buffer,
+                rootOffset,
+                32,
+              );
+
+        return object;
+      },
+    ),
+    TaskSeriesOB: obx_int.EntityDefinition<TaskSeriesOB>(
+      model: _entities[4],
+      toOneRelations: (TaskSeriesOB object) => [],
+      toManyRelations: (TaskSeriesOB object) => {},
+      getId: (TaskSeriesOB object) => object.obId,
+      setId: (TaskSeriesOB object, int id) {
+        object.obId = id;
+      },
+      objectToFB: (TaskSeriesOB object, fb.Builder fbb) {
+        final idOffset = fbb.writeString(object.id);
+        final userIdOffset = fbb.writeString(object.userId);
+        final titleOffset = fbb.writeString(object.title);
+        final descriptionOffset = object.description == null
+            ? null
+            : fbb.writeString(object.description!);
+        final priorityOffset = fbb.writeString(object.priority);
+        final tagsOffset = fbb.writeList(
+          object.tags.map(fbb.writeString).toList(growable: false),
+        );
+        final weekdaysCsvOffset = fbb.writeString(object.weekdaysCsv);
+        fbb.startTable(17);
+        fbb.addInt64(0, object.obId);
+        fbb.addOffset(1, idOffset);
+        fbb.addOffset(2, userIdOffset);
+        fbb.addOffset(3, titleOffset);
+        fbb.addOffset(4, descriptionOffset);
+        fbb.addOffset(5, priorityOffset);
+        fbb.addOffset(6, tagsOffset);
+        fbb.addOffset(7, weekdaysCsvOffset);
+        fbb.addInt64(8, object.dueMinutes);
+        fbb.addInt64(9, object.startsOn.millisecondsSinceEpoch);
+        fbb.addInt64(10, object.endsOn?.millisecondsSinceEpoch);
+        fbb.addBool(11, object.active);
+        fbb.addInt64(12, object.generatedThrough?.millisecondsSinceEpoch);
+        fbb.addBool(13, object.isSynced);
+        fbb.addInt64(14, object.updatedAt.millisecondsSinceEpoch);
+        fbb.addInt64(15, object.createdAt.millisecondsSinceEpoch);
+        fbb.finish(fbb.endTable());
+        return object.obId;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+        final endsOnValue = const fb.Int64Reader().vTableGetNullable(
+          buffer,
+          rootOffset,
+          24,
+        );
+        final generatedThroughValue = const fb.Int64Reader().vTableGetNullable(
+          buffer,
+          rootOffset,
+          28,
+        );
+        final obIdParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          4,
+          0,
+        );
+        final idParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 6, '');
+        final userIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 8, '');
+        final titleParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 10, '');
+        final descriptionParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 12);
+        final priorityParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 14, '');
+        final tagsParam = const fb.ListReader<String>(
+          fb.StringReader(asciiOptimization: true),
+          lazy: false,
+        ).vTableGet(buffer, rootOffset, 16, []);
+        final weekdaysCsvParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 18, '');
+        final dueMinutesParam = const fb.Int64Reader().vTableGetNullable(
+          buffer,
+          rootOffset,
+          20,
+        );
+        final startsOnParam = DateTime.fromMillisecondsSinceEpoch(
+          const fb.Int64Reader().vTableGet(buffer, rootOffset, 22, 0),
+        );
+        final endsOnParam = endsOnValue == null
+            ? null
+            : DateTime.fromMillisecondsSinceEpoch(endsOnValue);
+        final activeParam = const fb.BoolReader().vTableGet(
+          buffer,
+          rootOffset,
+          26,
+          false,
+        );
+        final generatedThroughParam = generatedThroughValue == null
+            ? null
+            : DateTime.fromMillisecondsSinceEpoch(generatedThroughValue);
+        final isSyncedParam = const fb.BoolReader().vTableGet(
+          buffer,
+          rootOffset,
+          30,
+          false,
+        );
+        final updatedAtParam = DateTime.fromMillisecondsSinceEpoch(
+          const fb.Int64Reader().vTableGet(buffer, rootOffset, 32, 0),
+        );
+        final createdAtParam = DateTime.fromMillisecondsSinceEpoch(
+          const fb.Int64Reader().vTableGet(buffer, rootOffset, 34, 0),
+        );
+        final object = TaskSeriesOB(
           obId: obIdParam,
           id: idParam,
           userId: userIdParam,
           title: titleParam,
           description: descriptionParam,
-          dueDate: dueDateParam,
           priority: priorityParam,
-          status: statusParam,
           tags: tagsParam,
-          completedAt: completedAtParam,
+          weekdaysCsv: weekdaysCsvParam,
+          dueMinutes: dueMinutesParam,
+          startsOn: startsOnParam,
+          endsOn: endsOnParam,
+          active: activeParam,
+          generatedThrough: generatedThroughParam,
           isSynced: isSyncedParam,
           updatedAt: updatedAtParam,
           createdAt: createdAtParam,
@@ -879,5 +1148,98 @@ class TaskOB_ {
   /// See [TaskOB.createdAt].
   static final createdAt = obx.QueryDateProperty<TaskOB>(
     _entities[3].properties[12],
+  );
+
+  /// See [TaskOB.seriesId].
+  static final seriesId = obx.QueryStringProperty<TaskOB>(
+    _entities[3].properties[13],
+  );
+
+  /// See [TaskOB.dueMinutes].
+  static final dueMinutes = obx.QueryIntegerProperty<TaskOB>(
+    _entities[3].properties[14],
+  );
+}
+
+/// [TaskSeriesOB] entity fields to define ObjectBox queries.
+class TaskSeriesOB_ {
+  /// See [TaskSeriesOB.obId].
+  static final obId = obx.QueryIntegerProperty<TaskSeriesOB>(
+    _entities[4].properties[0],
+  );
+
+  /// See [TaskSeriesOB.id].
+  static final id = obx.QueryStringProperty<TaskSeriesOB>(
+    _entities[4].properties[1],
+  );
+
+  /// See [TaskSeriesOB.userId].
+  static final userId = obx.QueryStringProperty<TaskSeriesOB>(
+    _entities[4].properties[2],
+  );
+
+  /// See [TaskSeriesOB.title].
+  static final title = obx.QueryStringProperty<TaskSeriesOB>(
+    _entities[4].properties[3],
+  );
+
+  /// See [TaskSeriesOB.description].
+  static final description = obx.QueryStringProperty<TaskSeriesOB>(
+    _entities[4].properties[4],
+  );
+
+  /// See [TaskSeriesOB.priority].
+  static final priority = obx.QueryStringProperty<TaskSeriesOB>(
+    _entities[4].properties[5],
+  );
+
+  /// See [TaskSeriesOB.tags].
+  static final tags = obx.QueryStringVectorProperty<TaskSeriesOB>(
+    _entities[4].properties[6],
+  );
+
+  /// See [TaskSeriesOB.weekdaysCsv].
+  static final weekdaysCsv = obx.QueryStringProperty<TaskSeriesOB>(
+    _entities[4].properties[7],
+  );
+
+  /// See [TaskSeriesOB.dueMinutes].
+  static final dueMinutes = obx.QueryIntegerProperty<TaskSeriesOB>(
+    _entities[4].properties[8],
+  );
+
+  /// See [TaskSeriesOB.startsOn].
+  static final startsOn = obx.QueryDateProperty<TaskSeriesOB>(
+    _entities[4].properties[9],
+  );
+
+  /// See [TaskSeriesOB.endsOn].
+  static final endsOn = obx.QueryDateProperty<TaskSeriesOB>(
+    _entities[4].properties[10],
+  );
+
+  /// See [TaskSeriesOB.active].
+  static final active = obx.QueryBooleanProperty<TaskSeriesOB>(
+    _entities[4].properties[11],
+  );
+
+  /// See [TaskSeriesOB.generatedThrough].
+  static final generatedThrough = obx.QueryDateProperty<TaskSeriesOB>(
+    _entities[4].properties[12],
+  );
+
+  /// See [TaskSeriesOB.isSynced].
+  static final isSynced = obx.QueryBooleanProperty<TaskSeriesOB>(
+    _entities[4].properties[13],
+  );
+
+  /// See [TaskSeriesOB.updatedAt].
+  static final updatedAt = obx.QueryDateProperty<TaskSeriesOB>(
+    _entities[4].properties[14],
+  );
+
+  /// See [TaskSeriesOB.createdAt].
+  static final createdAt = obx.QueryDateProperty<TaskSeriesOB>(
+    _entities[4].properties[15],
   );
 }

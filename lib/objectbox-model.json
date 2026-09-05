@@ -156,7 +156,7 @@
     },
     {
       "id": "4:747617318096413486",
-      "lastPropertyId": "13:4173909836098834722",
+      "lastPropertyId": "15:7374834658510376535",
       "name": "TaskOB",
       "properties": [
         {
@@ -226,13 +226,114 @@
           "id": "13:4173909836098834722",
           "name": "createdAt",
           "type": 10
+        },
+        {
+          "id": "14:1467189320373728968",
+          "name": "seriesId",
+          "type": 9
+        },
+        {
+          "id": "15:7374834658510376535",
+          "name": "dueMinutes",
+          "type": 6
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "5:6068920260359004829",
+      "lastPropertyId": "16:8526004714203986435",
+      "name": "TaskSeriesOB",
+      "properties": [
+        {
+          "id": "1:4409939326026774891",
+          "name": "obId",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:259320515799104608",
+          "name": "id",
+          "indexId": "4:6774363322577663843",
+          "type": 9,
+          "flags": 2080
+        },
+        {
+          "id": "3:3870875760961645266",
+          "name": "userId",
+          "type": 9
+        },
+        {
+          "id": "4:8770969338682926991",
+          "name": "title",
+          "type": 9
+        },
+        {
+          "id": "5:5852601435444405016",
+          "name": "description",
+          "type": 9
+        },
+        {
+          "id": "6:636469865923319009",
+          "name": "priority",
+          "type": 9
+        },
+        {
+          "id": "7:9062812246907844060",
+          "name": "tags",
+          "type": 30
+        },
+        {
+          "id": "8:5046404125608095323",
+          "name": "weekdaysCsv",
+          "type": 9
+        },
+        {
+          "id": "9:8556761250401781418",
+          "name": "dueMinutes",
+          "type": 6
+        },
+        {
+          "id": "10:3341887517960147282",
+          "name": "startsOn",
+          "type": 10
+        },
+        {
+          "id": "11:4189281802128147881",
+          "name": "endsOn",
+          "type": 10
+        },
+        {
+          "id": "12:6378851240253062535",
+          "name": "active",
+          "type": 1
+        },
+        {
+          "id": "13:5579855447216262253",
+          "name": "generatedThrough",
+          "type": 10
+        },
+        {
+          "id": "14:7618214664689941708",
+          "name": "isSynced",
+          "type": 1
+        },
+        {
+          "id": "15:5751637608518537484",
+          "name": "updatedAt",
+          "type": 10
+        },
+        {
+          "id": "16:8526004714203986435",
+          "name": "createdAt",
+          "type": 10
         }
       ],
       "relations": []
     }
   ],
-  "lastEntityId": "4:747617318096413486",
-  "lastIndexId": "3:6888479911234210361",
+  "lastEntityId": "5:6068920260359004829",
+  "lastIndexId": "4:6774363322577663843",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
   "modelVersion": 5,
