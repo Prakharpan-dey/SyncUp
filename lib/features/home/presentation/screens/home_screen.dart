@@ -11,6 +11,10 @@ import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../../../tasks/presentation/viewmodels/task_viewmodel.dart';
 import '../../../tasks/domain/entities/task.dart';
 import '../../../attendance/presentation/viewmodels/attendance_viewmodel.dart';
+import '../../../../core/utils/date_helpers.dart';
+import '../../../../core/utils/streak.dart';
+import '../../../feed/di/feed_providers.dart';
+import '../../../../core/widgets/app_snack_bar.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -31,31 +35,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
   }
 
-  int _calculateStreak(List<Task> tasks) {
-    if (tasks.isEmpty) return 0;
-    final completedDates = tasks
-        .where((t) => t.isCompleted && t.completedAt != null)
-        .map((t) => DateTime(
-            t.completedAt!.year, t.completedAt!.month, t.completedAt!.day))
-        .toSet()
-        .toList()
-      ..sort((a, b) => b.compareTo(a));
-
-    if (completedDates.isEmpty) return 0;
-
-    int streak = 0;
-    var check = DateTime(
-        DateTime.now().year, DateTime.now().month, DateTime.now().day);
-    for (final date in completedDates) {
-      if (date == check) {
-        streak++;
-        check = check.subtract(const Duration(days: 1));
-      } else if (date.isBefore(check)) {
-        break;
-      }
-    }
-    return streak;
-  }
 
   String _weekNumber() {
     final now = DateTime.now();
@@ -63,6 +42,53 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final dayOfYear = now.difference(startOfYear).inDays + 1;
     final weekNum = ((dayOfYear - now.weekday + 10) / 7).floor();
     return '$weekNum';
+  }
+
+  /// Today's tasks, done and not, in the order they are shown.
+  List<Task> _todaysTasks(TaskListState state) => state.tasks
+      .where((t) => t.dueDate != null && DateHelpers.isToday(t.dueDate!))
+      .toList()
+    ..sort(_byDueThenCreated);
+
+  /// Whether the share action is offered at all.
+  ///
+  /// Hidden when the user has set sharing to "nothing" — someone who chose to
+  /// share nothing should not be offered the action, and the server rejects it
+  /// anyway — and when there is nothing due today to share.
+  bool _canSharePlan(TaskListState state) {
+    final sharing = ref.read(authViewModelProvider).user?.privacySharingDefault;
+    if (sharing == null || sharing == 'none') return false;
+    return _todaysTasks(state).isNotEmpty;
+  }
+
+  /// Previews the plan, then posts it if the user confirms.
+  ///
+  /// The preview is not decoration: this publishes unfinished task titles to
+  /// friends, which is more than the app has ever shared before. Nothing should
+  /// leave the device that the user has not just read.
+  Future<void> _sharePlan(TaskListState state) async {
+    final tasks = _todaysTasks(state);
+    if (tasks.isEmpty) return;
+
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => _PlanPreviewSheet(tasks: tasks),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final result = await ref.read(feedRepositoryProvider).sharePlan(
+          date: DateHelpers.formatApiDate(DateTime.now()),
+          items: [
+            for (final t in tasks) (title: t.title, done: t.isCompleted),
+          ],
+        );
+
+    result.fold(
+      (f) => showAppSnackBarOn(messenger, f.message, isError: true),
+      (_) => showAppSnackBarOn(messenger, 'Shared with your friends'),
+    );
   }
 
   @override
@@ -78,10 +104,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final now = DateTime.now();
     final dateStr =
         '${DateFormat('EEE').format(now).toUpperCase()} ${now.day} ${DateFormat('MMM').format(now).toUpperCase()} · WEEK ${_weekNumber()}';
-    final streak = _calculateStreak(taskState.tasks);
-    final doneToday = taskState.completedCount;
-    final pendingTasks =
-        taskState.tasks.where((t) => !t.isCompleted).toList();
+    final streak = currentStreak(taskState.tasks);
+    final doneToday = taskState.completedTodayCount;
+    // Bounded to today. A daily habit generates an occurrence a day for a
+    // fortnight ahead and keeps every missed one, so an unfiltered list would
+    // bury today's work under next week's within days. The rows all still
+    // exist — the Tasks tab is where the backlog lives.
+    final endOfToday = DateTime(now.year, now.month, now.day, 23, 59, 59);
+    final pendingTasks = taskState.tasks
+        .where((t) => !t.isCompleted)
+        .where((t) => t.dueAt == null || !t.dueAt!.isAfter(endOfToday))
+        .toList()
+      ..sort(_byDueThenCreated);
     final completedTasks =
         taskState.tasks.where((t) => t.isCompleted).toList();
 
@@ -297,7 +331,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       ),
                                     ),
                                     TextSpan(
-                                      text: '/${taskState.tasks.length}',
+                                      text: '/${taskState.dueTodayCount}',
                                       style: GoogleFonts.bigShoulders(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w900,
@@ -334,17 +368,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                       ),
                       const Spacer(),
-                      Text(
-                        'COUNTS ONLY',
-                        style: GoogleFonts.dmMono(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 0.5,
-                          color: isDark
-                              ? AppColors.textSecondaryDark
-                              : AppColors.textSecondary,
+                      // Replaces a static 'COUNTS ONLY' label that described
+                      // nothing and did nothing.
+                      if (_canSharePlan(taskState))
+                        GestureDetector(
+                          onTap: () => _sharePlan(taskState),
+                          child: Row(
+                            children: [
+                              Icon(Icons.ios_share_rounded,
+                                  size: 12, color: AppColors.primary),
+                              const SizedBox(width: 4),
+                              Text(
+                                "SHARE TODAY'S PLAN",
+                                style: GoogleFonts.dmMono(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.5,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -600,6 +645,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
 }
 
+/// Soonest first; undated tasks last, newest of those first.
+int _byDueThenCreated(Task a, Task b) {
+  final ad = a.dueAt, bd = b.dueAt;
+  if (ad != null && bd != null) return ad.compareTo(bd);
+  if (ad != null) return -1;
+  if (bd != null) return 1;
+  return b.createdAt.compareTo(a.createdAt);
+}
+
 class _HomeTaskItem extends StatelessWidget {
   final Task task;
   final bool isDark;
@@ -637,13 +691,20 @@ class _HomeTaskItem extends StatelessWidget {
       final today = DateTime(now.year, now.month, now.day);
       final dueDay = DateTime(due.year, due.month, due.day);
       final diff = dueDay.difference(today).inDays;
-      if (diff == 0) {
-        parts.add(
-            'DUE ${due.hour.toString().padLeft(2, '0')}:${due.minute.toString().padLeft(2, '0')}');
-      } else if (diff == 1) {
-        parts.add('DUE TOMORROW');
-      } else if (diff < 0) {
+      // Overdue is decided by the task, not the day: a 21:00 task is not
+      // overdue at 09:00, and a date-only one is not overdue until midnight.
+      // This branch used to print the dueDate's own hour, which was always
+      // midnight, so every task due today read "DUE 00:00".
+      if (task.isOverdue) {
         parts.add('OVERDUE');
+      } else if (diff == 0) {
+        parts.add(task.dueMinutes != null
+            ? 'DUE ${DateHelpers.formatApiTime(task.dueMinutes!)}'
+            : 'DUE TODAY');
+      } else if (diff == 1) {
+        parts.add(task.dueMinutes != null
+            ? 'TOMORROW ${DateHelpers.formatApiTime(task.dueMinutes!)}'
+            : 'DUE TOMORROW');
       } else if (diff <= 7) {
         parts.add(
             'DUE ${DateFormat('EEE').format(due).toUpperCase()}');
@@ -753,6 +814,86 @@ class _HomeTaskItem extends StatelessWidget {
                   letterSpacing: 0.6,
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+/// Shows exactly what will be posted, before anything is posted.
+class _PlanPreviewSheet extends StatelessWidget {
+  final List<Task> tasks;
+  const _PlanPreviewSheet({required this.tasks});
+
+  @override
+  Widget build(BuildContext context) {
+    final done = tasks.where((t) => t.isCompleted).length;
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text("SHARE TODAY'S PLAN",
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 6),
+            Text(
+              'Your friends will see this list. Groups will not. '
+              'It is a snapshot — it will not update as you tick things off, '
+              'but you can share again to refresh it.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 16),
+            Flexible(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (final t in tasks)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              t.isCompleted
+                                  ? Icons.check_circle_rounded
+                                  : Icons.radio_button_unchecked_rounded,
+                              size: 16,
+                              color: t.isCompleted
+                                  ? AppColors.success
+                                  : AppColors.textSecondary,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                t.title,
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text('$done of ${tasks.length} done',
+                style: Theme.of(context).textTheme.labelSmall),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('SHARE'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('CANCEL'),
             ),
           ],
         ),

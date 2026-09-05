@@ -22,6 +22,8 @@ class FeedItemCard extends StatelessWidget {
         return Icons.local_fire_department_rounded;
       case FeedItemType.attendanceMilestone:
         return Icons.school_rounded;
+      case FeedItemType.dailyPlan:
+        return Icons.checklist_rounded;
     }
   }
 
@@ -33,6 +35,8 @@ class FeedItemCard extends StatelessWidget {
         return AppColors.warning;
       case FeedItemType.attendanceMilestone:
         return AppColors.info;
+      case FeedItemType.dailyPlan:
+        return AppColors.primary;
     }
   }
 
@@ -138,6 +142,73 @@ class FeedItemCard extends StatelessWidget {
               ],
             ),
           ),
+
+          // A shared plan carries its lines in metadata rather than in the
+          // title, so it renders as a checklist instead of a one-line sentence.
+          if (item.isPlan) ...[
+            const SizedBox(height: 10),
+            ...item.planLines.map((line) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        line.done
+                            ? Icons.check_circle_rounded
+                            : Icons.radio_button_unchecked_rounded,
+                        size: 15,
+                        color: line.done
+                            ? AppColors.success
+                            : (isDark
+                                ? AppColors.textSecondaryDark
+                                : AppColors.textSecondary),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          line.title,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                decoration: line.done
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                                color: line.done
+                                    ? (isDark
+                                        ? AppColors.textSecondaryDark
+                                        : AppColors.textSecondary)
+                                    : null,
+                              ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
+            if (item.planHiddenCount > 0)
+              Padding(
+                padding: const EdgeInsets.only(left: 23, top: 2),
+                child: Text(
+                  '+${item.planHiddenCount} more',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: isDark
+                            ? AppColors.textSecondaryDark
+                            : AppColors.textSecondary,
+                      ),
+                ),
+              ),
+            if (item.summary != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                item.summary!,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                      color: AppColors.primary,
+                    ),
+              ),
+            ],
+          ],
+
           const SizedBox(height: 12),
 
           // Action bar

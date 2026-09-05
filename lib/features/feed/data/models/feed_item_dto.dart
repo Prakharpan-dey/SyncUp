@@ -2,7 +2,7 @@ import '../../domain/entities/feed_item.dart';
 
 class FeedItemDto {
   final String id, actorId, actorName, type, visibility, title;
-  final String? actorPhotoUrl, groupId, groupName;
+  final String? actorPhotoUrl, groupId, groupName, summary;
   final Map<String, dynamic> metadata;
   final int reactionCount;
   final bool reacted;
@@ -15,6 +15,7 @@ class FeedItemDto {
     this.actorPhotoUrl,
     required this.type,
     required this.title,
+    this.summary,
     required this.metadata,
     required this.visibility,
     this.groupId,
@@ -33,6 +34,9 @@ class FeedItemDto {
         // Previously dropped, which is why every card read "completed 1 task"
         // no matter what the server sent.
         title: json['title'] as String? ?? '',
+        // Also previously dropped. A shared plan puts its "3 of 5 done" line
+        // here, so ignoring it left the card without its headline figure.
+        summary: json['summary'] as String?,
         metadata: Map<String, dynamic>.from(json['metadata'] ?? {}),
         visibility: json['visibility'] as String? ?? 'friends',
         groupId: json['group_id'] as String?,
@@ -48,6 +52,7 @@ class FeedItemDto {
       'task_completed': FeedItemType.taskCompleted,
       'streak_milestone': FeedItemType.streakMilestone,
       'attendance_milestone': FeedItemType.attendanceMilestone,
+      'daily_plan': FeedItemType.dailyPlan,
     };
 
     return FeedItem(
@@ -57,6 +62,7 @@ class FeedItemDto {
       actorPhotoUrl: actorPhotoUrl,
       type: typeMap[type] ?? FeedItemType.taskCompleted,
       title: title,
+      summary: summary,
       metadata: metadata,
       // Unknown values fall back rather than throwing: one unrecognised
       // string would otherwise take out the whole feed page.

@@ -67,6 +67,27 @@ class FeedRepositoryImpl implements FeedRepository {
   }
 
   @override
+  Future<Either<Failure, FeedItem>> sharePlan({
+    required String date,
+    required List<({String title, bool done})> items,
+  }) async {
+    if (!_connectivity.isOnline) {
+      return const Left(NetworkFailure('Connect to the internet to share'));
+    }
+    try {
+      final data = await _remote.sharePlan(
+        date: date,
+        items: [
+          for (final i in items) {'title': i.title, 'done': i.done},
+        ],
+      );
+      return Right(FeedItemDto.fromJson(data).toDomain());
+    } catch (e) {
+      return Left(_mapError(e));
+    }
+  }
+
+  @override
   Future<Either<Failure, ({bool reacted, int count})>> react(
       String feedItemId, String emoji) async {
     if (!_connectivity.isOnline) {

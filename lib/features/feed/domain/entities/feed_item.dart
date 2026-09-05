@@ -1,6 +1,14 @@
 import 'package:equatable/equatable.dart';
 
-enum FeedItemType { taskCompleted, streakMilestone, attendanceMilestone }
+enum FeedItemType {
+  taskCompleted,
+  streakMilestone,
+  attendanceMilestone,
+
+  /// A snapshot of one day's tasks, posted deliberately rather than emitted by
+  /// the app. Its lines live in [FeedItem.metadata].
+  dailyPlan,
+}
 
 enum FeedVisibility { friends, group }
 
@@ -17,6 +25,12 @@ class FeedItem extends Equatable {
   /// name, `summary` sends a generic line instead. Rendering this rather than
   /// rebuilding a sentence locally is what makes that setting mean anything.
   final String title;
+
+  /// A secondary line under the title, e.g. "3 of 5 done" on a shared plan.
+  ///
+  /// The server has always sent this; the client used to drop it on the floor.
+  final String? summary;
+
   final Map<String, dynamic> metadata;
   final FeedVisibility visibility;
   final String? groupId;
@@ -36,6 +50,7 @@ class FeedItem extends Equatable {
     this.actorPhotoUrl,
     required this.type,
     required this.title,
+    this.summary,
     this.metadata = const {},
     required this.visibility,
     this.groupId,
@@ -60,6 +75,8 @@ class FeedItem extends Equatable {
         final pct = metadata['percentage'] ?? 0;
         final subject = metadata['subject_name'] ?? 'a subject';
         return 'hit $pct% attendance in $subject';
+      case FeedItemType.dailyPlan:
+        return 'shared their plan';
     }
   }
 
@@ -81,4 +98,38 @@ class FeedItem extends Equatable {
 
   @override
   List<Object?> get props => [id];
+
+  bool get isPlan => type == FeedItemType.dailyPlan;
+
+  /// The plan's lines, as stored in [metadata]. Empty for any other card.
+  ///
+  /// Tolerant of a malformed payload: one bad row should not take out the
+  /// whole feed page.
+  List<PlanLine> get planLines {
+    final raw = metadata['items'];
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map>()
+        .map((m) => PlanLine(
+              title: m['title'] as String? ?? '',
+              done: m['done'] == true,
+            ))
+        .where((l) => l.title.isNotEmpty)
+        .toList();
+  }
+
+  /// How many lines the author had beyond the ones carried in [planLines].
+  int get planHiddenCount {
+    final total = metadata['total'];
+    if (total is! int) return 0;
+    final hidden = total - planLines.length;
+    return hidden > 0 ? hidden : 0;
+  }
+}
+
+/// One line of a shared plan.
+class PlanLine {
+  final String title;
+  final bool done;
+  const PlanLine({required this.title, required this.done});
 }
