@@ -10,6 +10,7 @@ import '../viewmodels/task_viewmodel.dart';
 import '../widgets/task_card.dart';
 import '../widgets/stats_card.dart';
 import '../widgets/streak_card.dart';
+import '../../../../core/utils/streak.dart';
 
 class TaskListScreen extends ConsumerStatefulWidget {
   const TaskListScreen({super.key});
@@ -102,9 +103,87 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         .onFirstMeaningfulAction(context);
   }
 
+  /// Overdue starts collapsed: it is the group that grows without bound when
+  /// someone ignores a daily habit, and it is the least actionable.
+  bool _overdueExpanded = false;
+
+  List<Widget> _section(
+    String label,
+    List<Task> tasks,
+    bool isDark, {
+    bool collapsible = false,
+  }) {
+    if (tasks.isEmpty) return const [];
+    final expanded = !collapsible || _overdueExpanded;
+
+    return [
+      const SizedBox(height: 8),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+        child: GestureDetector(
+          onTap: collapsible
+              ? () => setState(() => _overdueExpanded = !_overdueExpanded)
+              : null,
+          child: Row(
+            children: [
+              Text(
+                '$label (${tasks.length})',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.0,
+                      color: label == 'OVERDUE'
+                          ? AppColors.error
+                          : (isDark
+                              ? AppColors.textSecondaryDark
+                              : AppColors.textSecondary),
+                    ),
+              ),
+              if (collapsible) ...[
+                const SizedBox(width: 4),
+                Icon(
+                  expanded
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.keyboard_arrow_down_rounded,
+                  size: 18,
+                  color: AppColors.error,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+      if (expanded)
+        ...tasks.map((task) => TaskCard(
+              task: task,
+              onTap: () => context.push('/tasks/${task.id}'),
+              onToggle: () => _completeTask(task),
+            )),
+    ];
+  }
+
   Widget _buildTaskList(TaskListState taskState, bool isDark) {
     final pendingTasks = taskState.tasks.where((t) => !t.isCompleted).toList();
     final completedTasks = taskState.tasks.where((t) => t.isCompleted).toList();
+
+    // Grouped rather than one flat PENDING list. Repeating tasks materialise an
+    // occurrence a day for a fortnight ahead, and missed ones are kept on
+    // purpose, so a single list would put next Tuesday's medicine above this
+    // morning's within a week of use.
+    final now = DateTime.now();
+    final endOfToday = DateTime(now.year, now.month, now.day, 23, 59, 59);
+
+    final overdue = pendingTasks.where((t) => t.isOverdue).toList()
+      ..sort((a, b) => b.dueAt!.compareTo(a.dueAt!));
+    final todayTasks = pendingTasks
+        .where((t) =>
+            !t.isOverdue && t.dueAt != null && !t.dueAt!.isAfter(endOfToday))
+        .toList()
+      ..sort((a, b) => a.dueAt!.compareTo(b.dueAt!));
+    final upcoming = pendingTasks
+        .where((t) => t.dueAt != null && t.dueAt!.isAfter(endOfToday))
+        .toList()
+      ..sort((a, b) => a.dueAt!.compareTo(b.dueAt!));
+    final undated = pendingTasks.where((t) => t.dueAt == null).toList();
 
     return RefreshIndicator(
       onRefresh: () => ref
@@ -121,30 +200,18 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
             ),
             const SizedBox(height: 8),
             StreakCard(
-              currentStreak: _calculateStreak(taskState.tasks),
-              longestStreak: _calculateStreak(taskState.tasks),
+              currentStreak: currentStreak(taskState.tasks),
+              // Was the current streak passed twice, so BEST could never
+              // exceed today's run and fell whenever a day was missed.
+              longestStreak: longestStreak(taskState.tasks),
             ),
             const SizedBox(height: 16),
           ],
 
-          if (pendingTasks.isNotEmpty) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-              child: Text(
-                'PENDING (${pendingTasks.length})',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.0,
-                  color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
-                ),
-              ),
-            ),
-            ...pendingTasks.map((task) => TaskCard(
-                  task: task,
-                  onTap: () => context.push('/tasks/${task.id}'),
-                  onToggle: () => _completeTask(task),
-                )),
-          ],
+          ..._section('OVERDUE', overdue, isDark, collapsible: true),
+          ..._section('TODAY', todayTasks, isDark),
+          ..._section('UPCOMING', upcoming, isDark),
+          ..._section('NO DUE DATE', undated, isDark),
 
           if (completedTasks.isNotEmpty) ...[
             const SizedBox(height: 12),
@@ -172,29 +239,4 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     );
   }
 
-  int _calculateStreak(List tasks) {
-    if (tasks.isEmpty) return 0;
-    final completedDates = tasks
-        .where((t) => t.isCompleted && t.completedAt != null)
-        .map((t) => DateTime(
-            t.completedAt!.year, t.completedAt!.month, t.completedAt!.day))
-        .toSet()
-        .toList()
-      ..sort((a, b) => b.compareTo(a));
-
-    if (completedDates.isEmpty) return 0;
-
-    int streak = 0;
-    var check = DateTime(
-        DateTime.now().year, DateTime.now().month, DateTime.now().day);
-    for (final date in completedDates) {
-      if (date == check) {
-        streak++;
-        check = check.subtract(const Duration(days: 1));
-      } else if (date.isBefore(check)) {
-        break;
-      }
-    }
-    return streak;
-  }
 }

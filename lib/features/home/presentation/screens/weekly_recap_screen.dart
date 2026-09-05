@@ -9,6 +9,23 @@ import '../../../tasks/domain/entities/task.dart';
 import '../../../attendance/presentation/viewmodels/attendance_viewmodel.dart';
 import '../../../../core/widgets/app_snack_bar.dart';
 
+/// Tasks completed within the seven days starting [weekStart].
+///
+/// The recap computed a week window and then ignored it, reading every task
+/// ever — so TASKS, FOCUS and the "you showed up N of 7 days" headline were
+/// all-time figures. Because days-active is clamped to 7, after seven active
+/// days *ever* the headline read "7 of 7" permanently. Only the bar chart,
+/// which does its own bucketing, was ever right.
+List<Task> completionsInWeek(List<Task> tasks, DateTime weekStart) {
+  final start = DateTime(weekStart.year, weekStart.month, weekStart.day);
+  final end = start.add(const Duration(days: 7));
+  return tasks.where((t) {
+    final at = t.completedAt;
+    if (!t.isCompleted || at == null) return false;
+    return !at.isBefore(start) && at.isBefore(end);
+  }).toList();
+}
+
 class WeeklyRecapScreen extends ConsumerWidget {
   const WeeklyRecapScreen({super.key});
 
@@ -24,9 +41,7 @@ class WeeklyRecapScreen extends ConsumerWidget {
     final dateRange =
         '${weekStart.day}–${weekEnd.day} ${DateFormat('MMM').format(weekEnd).toUpperCase()}';
 
-    final weekTasks = taskState.tasks;
-    final completedTasks =
-        weekTasks.where((t) => t.isCompleted).toList();
+    final completedTasks = completionsInWeek(taskState.tasks, weekStart);
     final daysActive = _daysActive(completedTasks);
     final totalCompleted = completedTasks.length;
 
