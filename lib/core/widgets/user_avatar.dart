@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/neo_brutalism.dart';
+import '../utils/stable_hash.dart';
 
 /// A person's avatar, generated rather than uploaded.
 ///
@@ -46,22 +47,10 @@ class UserAvatar extends StatelessWidget {
     AppColors.accentLight,
   ];
 
-  /// FNV-1a over the seed's bytes.
-  ///
-  /// Dart's `String.hashCode` is not guaranteed stable across releases or
-  /// platforms, so an avatar keyed on it could change colour after an SDK
-  /// upgrade or differ between a phone and the web build.
-  static int _stableHash(String value) {
-    var hash = 0x811c9dc5;
-    for (final unit in value.codeUnits) {
-      hash ^= unit;
-      hash = (hash * 0x01000193) & 0xFFFFFFFF;
-    }
-    return hash;
-  }
-
+  // The FNV-1a itself now lives in core/utils/stable_hash.dart, shared with
+  // notification ids, which need the same guarantee for a stronger reason.
   static Color colorFor(String seed) =>
-      _palette[_stableHash(seed) % _palette.length];
+      _palette[stableHash(seed) % _palette.length];
 
   /// Up to two initials: "Alex Dsouza" reads as AD, which distinguishes far
   /// more people than a single letter.
