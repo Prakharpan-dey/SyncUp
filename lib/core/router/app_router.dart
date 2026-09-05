@@ -12,6 +12,7 @@ import '../../features/auth/presentation/screens/reset_password_screen.dart';
 import '../../features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../../features/tasks/presentation/screens/task_list_screen.dart';
 import '../../features/tasks/presentation/screens/task_create_screen.dart';
+import '../../features/tasks/presentation/screens/task_series_edit_screen.dart';
 import '../../features/tasks/presentation/screens/task_detail_screen.dart';
 import '../../features/attendance/presentation/screens/subject_list_screen.dart';
 import '../../features/attendance/presentation/screens/subject_detail_screen.dart';
@@ -256,6 +257,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     path: 'new',
                     name: RouteNames.taskCreate,
                     builder: (ctx, state) => const TaskCreateScreen(),
+                  ),
+                  // Declared before ':taskId' so the static segment is not
+                  // swallowed by the parameterised one.
+                  GoRoute(
+                    path: 'series/:seriesId/edit',
+                    name: RouteNames.taskSeriesEdit,
+                    builder: (ctx, state) => TaskSeriesEditScreen(
+                      seriesId: state.pathParameters['seriesId']!,
+                    ),
                   ),
                   GoRoute(
                     path: ':taskId',

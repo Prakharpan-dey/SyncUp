@@ -13,6 +13,7 @@ class RouteNames {
   static const tasks = 'tasks';
   static const taskDetail = 'task-detail';
   static const taskCreate = 'task-create';
+  static const taskSeriesEdit = 'task-series-edit';
   static const attendance = 'attendance';
   static const subjectDetail = 'subject-detail';
   static const subjectCreate = 'subject-create';

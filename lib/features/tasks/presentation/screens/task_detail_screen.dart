@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/neo_brutalism.dart';
 import '../../domain/entities/task.dart';
 import '../viewmodels/task_viewmodel.dart';
+import '../../../../core/utils/date_helpers.dart';
 
 class TaskDetailScreen extends ConsumerWidget {
   final String taskId;
@@ -27,6 +28,15 @@ class TaskDetailScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('TASK DETAILS'),
         actions: [
+          // Only for occurrences: a one-off task has no rule behind it, and
+          // there is no per-task edit screen.
+          if (task.isRecurring)
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: 'Edit repeat',
+              onPressed: () =>
+                  context.push('/tasks/series/${task.seriesId}/edit'),
+            ),
           IconButton(
             icon: const Icon(Icons.delete_outline_rounded),
             onPressed: () {
@@ -139,6 +149,26 @@ class TaskDetailScreen extends ConsumerWidget {
                   ? '${task.dueDate!.day}/${task.dueDate!.month}/${task.dueDate!.year}'
                   : 'No due date',
             ),
+            if (task.dueMinutes != null) ...[
+              const SizedBox(height: 12),
+              _buildDetailRow(
+                context: context,
+                isDark: isDark,
+                icon: Icons.schedule_rounded,
+                label: 'DUE TIME',
+                value: DateHelpers.formatApiTime(task.dueMinutes!),
+              ),
+            ],
+            if (task.isRecurring) ...[
+              const SizedBox(height: 12),
+              _buildDetailRow(
+                context: context,
+                isDark: isDark,
+                icon: Icons.repeat_rounded,
+                label: 'REPEATS',
+                value: 'One of a repeating task',
+              ),
+            ],
             const SizedBox(height: 12),
             _buildDetailRow(
               context: context,
