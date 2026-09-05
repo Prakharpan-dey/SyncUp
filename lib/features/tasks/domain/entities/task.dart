@@ -13,6 +13,17 @@ class Task extends Equatable {
   final TaskPriority priority;
   final TaskStatus status;
   final List<String> tags;
+
+  /// The repeating rule this task was generated from, or null for a one-off.
+  final String? seriesId;
+
+  /// Local time of day the task is due, as minutes past midnight (0..1439).
+  ///
+  /// Minutes rather than `TimeOfDay`, which would drag Flutter into an entity
+  /// that otherwise imports only equatable, and rather than a string, which
+  /// would need parsing everywhere arithmetic happens.
+  final int? dueMinutes;
+
   final DateTime createdAt, updatedAt;
 
   const Task({
@@ -25,21 +36,47 @@ class Task extends Equatable {
     this.status = TaskStatus.pending,
     this.tags = const [],
     this.completedAt,
+    this.seriesId,
+    this.dueMinutes,
     required this.createdAt,
     required this.updatedAt,
   });
 
   bool get isCompleted => status == TaskStatus.completed;
 
-  /// Pass [clearCompletedAt] = true to explicitly set completedAt to null.
+  bool get isRecurring => seriesId != null;
+
+  /// The instant this is actually due.
+  ///
+  /// A task with no time is due at the *end* of its day, not at midnight —
+  /// which is why one due today used to read "overdue" from 00:00.
+  DateTime? get dueAt {
+    final date = dueDate;
+    if (date == null) return null;
+    return DateTime(date.year, date.month, date.day)
+        .add(Duration(minutes: dueMinutes ?? (23 * 60 + 59)));
+  }
+
+  bool get isOverdue {
+    final at = dueAt;
+    return !isCompleted && at != null && at.isBefore(DateTime.now());
+  }
+
+  /// Pass [_cleared]-defaulted fields explicitly as null to clear them.
+  ///
+  /// [dueDate] and [dueMinutes] use the sentinel because the edit screen has to
+  /// be able to *remove* a due date or time; a plain `?? this.x` can only ever
+  /// set one.
   Task copyWith({
     String? title,
     String? description,
-    DateTime? dueDate,
+    Object? dueDate = _cleared,
     TaskPriority? priority,
     TaskStatus? status,
     List<String>? tags,
     Object? completedAt = _cleared,
+    String? seriesId,
+    Object? dueMinutes = _cleared,
     DateTime? updatedAt,
   }) =>
       Task(
@@ -47,17 +84,23 @@ class Task extends Equatable {
         userId: userId,
         title: title ?? this.title,
         description: description ?? this.description,
-        dueDate: dueDate ?? this.dueDate,
+        dueDate: identical(dueDate, _cleared) ? this.dueDate : dueDate as DateTime?,
         priority: priority ?? this.priority,
         status: status ?? this.status,
         tags: tags ?? this.tags,
         completedAt: identical(completedAt, _cleared)
             ? this.completedAt
             : completedAt as DateTime?,
+        seriesId: seriesId ?? this.seriesId,
+        dueMinutes:
+            identical(dueMinutes, _cleared) ? this.dueMinutes : dueMinutes as int?,
         createdAt: createdAt,
         updatedAt: updatedAt ?? DateTime.now(),
       );
 
+  // Widened beyond [id]: an edited task has to compare unequal to its old self,
+  // or a ListView reuses the element and renders the stale row.
   @override
-  List<Object?> get props => [id];
+  List<Object?> get props =>
+      [id, title, dueDate, dueMinutes, priority, status, completedAt, seriesId];
 }

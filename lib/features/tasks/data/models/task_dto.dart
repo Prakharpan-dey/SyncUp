@@ -3,13 +3,14 @@ import '../../domain/entities/task.dart';
 
 class TaskDto {
   final String id, userId, title, priority, status;
-  final String? description, dueDate, completedAt;
+  final String? description, dueDate, completedAt, seriesId, dueTime;
   final List<String> tags;
 
   const TaskDto({
     required this.id, required this.userId, required this.title,
     this.description, this.dueDate, required this.priority,
     required this.status, this.tags = const [], this.completedAt,
+    this.seriesId, this.dueTime,
   });
 
   factory TaskDto.fromJson(Map<String, dynamic> json) => TaskDto(
@@ -18,6 +19,8 @@ class TaskDto {
     priority: json['priority'] ?? 'medium', status: json['status'] ?? 'pending',
     tags: List<String>.from(json['tags'] ?? []),
     completedAt: json['completed_at'],
+    seriesId: json['series_id'],
+    dueTime: json['due_time'],
   );
 
   /// The wire payload for `POST /tasks` and `PATCH /tasks/:id`.
@@ -34,6 +37,8 @@ class TaskDto {
     if (description != null) 'description': description,
     if (dueDate != null) 'due_date': dueDate,
     if (completedAt != null) 'completed_at': completedAt,
+    if (seriesId != null) 'series_id': seriesId,
+    if (dueTime != null) 'due_time': dueTime,
   };
 
   Task toDomain() => Task(
@@ -42,6 +47,8 @@ class TaskDto {
     priority: TaskPriority.values.byName(priority),
     status: TaskStatus.values.byName(status), tags: tags,
     completedAt: completedAt != null ? DateTime.parse(completedAt!) : null,
+    seriesId: seriesId,
+    dueMinutes: DateHelpers.parseApiTime(dueTime),
     createdAt: DateTime.now(), updatedAt: DateTime.now(),
   );
 
@@ -52,5 +59,7 @@ class TaskDto {
     priority: t.priority.name,
     status: t.status.name, tags: t.tags,
     completedAt: t.completedAt?.toIso8601String(),
+    seriesId: t.seriesId,
+    dueTime: t.dueMinutes != null ? DateHelpers.formatApiTime(t.dueMinutes!) : null,
   );
 }

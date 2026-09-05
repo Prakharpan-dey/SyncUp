@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../di/core_providers.dart';
 import '../storage/models/subject_ob.dart';
 import '../storage/models/task_ob.dart';
+import '../storage/models/task_series_ob.dart';
 import '../storage/object_box_store.dart';
 import '../sync/sync_manager.dart';
 import '../utils/date_helpers.dart';
@@ -37,7 +38,11 @@ class GuestDataMigrator {
     if (guestId == accountId || guestId.isEmpty || accountId.isEmpty) return 0;
 
     final moved =
-        await _rekeyTasks(guestId, accountId) +
+        // Series first: occurrences carry seriesId, and a server that has not
+        // seen the series yet would hold rows pointing at nothing. There is no
+        // foreign key, so this is ordering hygiene rather than a hard failure.
+        await _rekeyTaskSeries(guestId, accountId) +
+            await _rekeyTasks(guestId, accountId) +
             await _rekeySubjects(guestId, accountId);
 
     if (moved > 0) {
@@ -81,7 +86,52 @@ class GuestDataMigrator {
           status: row.status,
           tags: row.tags,
           completedAt: row.completedAt?.toIso8601String(),
+          seriesId: row.seriesId,
+          dueTime: row.dueMinutes != null
+              ? DateHelpers.formatApiTime(row.dueMinutes!)
+              : null,
         ).toJson(),
+      );
+    }
+    return rows.length;
+  }
+
+  /// Moves the guest's repeating rules onto the new account.
+  ///
+  /// Runs before [_rekeyTasks] so the series reach the server first.
+  Future<int> _rekeyTaskSeries(String guestId, String accountId) async {
+    final box = _store.box<TaskSeriesOB>();
+    final query = box.query(TaskSeriesOB_.userId.equals(guestId)).build();
+    final rows = query.find();
+    query.close();
+    if (rows.isEmpty) return 0;
+
+    for (final row in rows) {
+      row.userId = accountId;
+      row.isSynced = false;
+    }
+    box.putMany(rows);
+
+    for (final row in rows) {
+      await _syncManager.enqueue(
+        operationType: 'CREATE',
+        entityType: 'task_series',
+        entityId: row.id,
+        payload: {
+          'id': row.id,
+          'title': row.title,
+          'priority': row.priority,
+          'tags': row.tags,
+          'weekdays': row.weekdaysCsv,
+          'starts_on': DateHelpers.formatApiDate(row.startsOn),
+          'active': row.active,
+          if (row.description != null) 'description': row.description,
+          if (row.dueMinutes != null)
+            'due_time': DateHelpers.formatApiTime(row.dueMinutes!),
+          if (row.endsOn != null) 'ends_on': DateHelpers.formatApiDate(row.endsOn!),
+          if (row.generatedThrough != null)
+            'generated_through': DateHelpers.formatApiDate(row.generatedThrough!),
+        },
       );
     }
     return rows.length;

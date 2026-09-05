@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:fpdart/fpdart.dart' hide Task, Order;
 import 'package:syncup/core/error/failures.dart';
 import 'package:syncup/core/storage/models/task_ob.dart';
@@ -33,6 +34,8 @@ class TaskRepositoryImpl implements TaskRepository {
         status: TaskStatus.values.byName(ob.status),
         tags: ob.tags,
         completedAt: ob.completedAt,
+        seriesId: ob.seriesId,
+        dueMinutes: ob.dueMinutes,
         createdAt: ob.createdAt,
         updatedAt: ob.updatedAt,
       );
@@ -54,6 +57,8 @@ class TaskRepositoryImpl implements TaskRepository {
       status: task.status.name,
       tags: task.tags,
       completedAt: task.completedAt,
+      seriesId: task.seriesId,
+      dueMinutes: task.dueMinutes,
       isSynced: isSynced,
       updatedAt: task.updatedAt,
       createdAt: task.createdAt,
@@ -114,6 +119,49 @@ class TaskRepositoryImpl implements TaskRepository {
         remoteFn: () => _remote.createTask(json),
       );
       return Right(task);
+    } catch (e) {
+      return Left(CacheFailure(e.toString()));
+    }
+  }
+
+  /// Which of [ids] already exist locally.
+  ///
+  /// One query for the whole batch: occurrence generation checks a fortnight of
+  /// candidate ids on every app open, and a lookup each would be 14 round trips
+  /// through ObjectBox for nothing.
+  @override
+  Set<String> existingTaskIds(Iterable<String> ids) {
+    final list = ids.toList();
+    if (list.isEmpty) return {};
+    final q = _box.query(TaskOB_.id.oneOf(list)).build();
+    final found = q.find().map((e) => e.id).toSet();
+    q.close();
+    return found;
+  }
+
+  /// Writes a batch of generated occurrences and queues them for upload.
+  ///
+  /// Deliberately not `createTask` in a loop: that fires one immediate HTTP POST
+  /// per occurrence, so a first run would open fourteen concurrent connections.
+  /// Enqueuing straight to the outbox lets SyncManager chunk and pace them, and
+  /// it already preserves order.
+  @override
+  Future<Either<Failure, List<Task>>> createOccurrences(List<Task> tasks) async {
+    if (tasks.isEmpty) return const Right([]);
+    try {
+      _box.putMany(tasks.map((t) => _domainToOb(t)).toList());
+
+      for (final task in tasks) {
+        await _syncManager.enqueue(
+          operationType: 'CREATE',
+          entityType: 'task',
+          entityId: task.id,
+          payload: TaskDto.fromDomain(task).toJson(),
+        );
+      }
+      unawaited(_syncManager.processQueue());
+
+      return Right(tasks);
     } catch (e) {
       return Left(CacheFailure(e.toString()));
     }

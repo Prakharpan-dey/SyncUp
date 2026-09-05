@@ -13,12 +13,14 @@ class CreateTaskUseCase {
     String? description, DateTime? dueDate,
     TaskPriority priority = TaskPriority.medium,
     List<String> tags = const [],
+    int? dueMinutes,
   }) async {
     if (title.trim().isEmpty) return const Left(ValidationFailure('Title required'));
     final task = Task(
       id: const Uuid().v4(), userId: userId, title: title.trim(),
       description: description, dueDate: dueDate, priority: priority,
-      tags: tags, createdAt: DateTime.now(), updatedAt: DateTime.now(),
+      tags: tags, dueMinutes: dueMinutes,
+      createdAt: DateTime.now(), updatedAt: DateTime.now(),
     );
     return _repo.createTask(task);
   }

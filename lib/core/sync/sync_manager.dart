@@ -139,6 +139,13 @@ class SyncManager {
       case ('task', 'DELETE'):
         await _dio.delete('/tasks/$id');
 
+      case ('task_series', 'CREATE'):
+        await _dio.post('/task-series', data: payload);
+      case ('task_series', 'UPDATE'):
+        await _dio.patch('/task-series/$id', data: payload);
+      case ('task_series', 'DELETE'):
+        await _dio.delete('/task-series/$id');
+
       case ('subject', 'CREATE'):
         await _dio.post('/subjects', data: payload);
       case ('subject', 'UPDATE'):

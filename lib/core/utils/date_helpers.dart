@@ -24,6 +24,27 @@ class DateHelpers {
   static String formatApiDate(DateTime date) =>
       DateFormat('yyyy-MM-dd').format(date);
 
+  /// `'HH:mm'` from minutes past midnight — the wire format for `due_time`.
+  ///
+  /// Local wall-clock, with no timezone attached: the server stores it opaquely
+  /// and only the device, which knows its own zone, turns it into an alarm.
+  static String formatApiTime(int minutesPastMidnight) {
+    final h = (minutesPastMidnight ~/ 60).toString().padLeft(2, '0');
+    final m = (minutesPastMidnight % 60).toString().padLeft(2, '0');
+    return '$h:$m';
+  }
+
+  /// Minutes past midnight from `'HH:mm'`, or null if absent or malformed.
+  static int? parseApiTime(String? hhmm) {
+    if (hhmm == null) return null;
+    final parts = hhmm.split(':');
+    if (parts.length != 2) return null;
+    final h = int.tryParse(parts[0]);
+    final m = int.tryParse(parts[1]);
+    if (h == null || m == null || h < 0 || h > 23 || m < 0 || m > 59) return null;
+    return h * 60 + m;
+  }
+
   static String formatRelative(DateTime date) {
     final diff = DateTime.now().difference(date);
     if (diff.inMinutes < 1) return 'Just now';
