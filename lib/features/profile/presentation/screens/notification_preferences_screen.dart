@@ -11,6 +11,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/neo_brutalism.dart';
 import '../../../../core/widgets/app_snack_bar.dart';
 import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../../../tasks/di/task_providers.dart';
+import '../../../tasks/presentation/viewmodels/task_viewmodel.dart';
 
 class NotificationPreferencesScreen extends ConsumerStatefulWidget {
   const NotificationPreferencesScreen({super.key});
@@ -172,6 +174,16 @@ class _NotificationPreferencesScreenState
         _kReactions: _reactions,
       },
     });
+
+    // Local task reminders are scheduled on the device and never pass through
+    // the server's preference check, so switching the toggle off has to cancel
+    // what is already pending rather than waiting for the next app open.
+    if (success) {
+      await ref.read(taskNotificationSchedulerProvider).sync(
+            ref.read(taskViewModelProvider).tasks,
+            remindersEnabled: _taskReminders,
+          );
+    }
 
     if (!mounted) return;
     setState(() => _saving = false);
