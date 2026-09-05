@@ -1,4 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:timezone/data/latest_all.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
 
 import '../theme/app_colors.dart';
 
@@ -10,6 +13,22 @@ import '../theme/app_colors.dart';
 /// a separate system-generated channel and the user sees two SyncUp entries in
 /// notification settings.
 const _channelId = 'syncup_default';
+
+/// How every SyncUp notification is presented.
+///
+/// Hoisted to file level so an immediate notification and a scheduled reminder
+/// are identical — when this lived inline, only one of the two could change.
+const _androidDetails = AndroidNotificationDetails(
+  _channelId,
+  'SyncUp Notifications',
+  channelDescription:
+      'Task reminders, attendance warnings, and friend activity',
+  importance: Importance.high,
+  priority: Priority.high,
+  // Matches the accent FCM applies to pushes it draws itself, so a
+  // foreground notification and a backgrounded one look the same.
+  color: AppColors.primary,
+);
 
 /// Core notification service wrapping flutter_local_notifications
 /// Can be extended with FCM once Firebase is fully configured
@@ -61,7 +80,30 @@ class NotificationService {
           ),
         );
 
+    await _initializeTimeZone();
+
     _initialized = true;
+  }
+
+  /// Loads the timezone database and points `tz.local` at the device's zone.
+  ///
+  /// Without this `tz.local` stays UTC, and every scheduled reminder would fire
+  /// off by the device offset — 5.5 hours out in IST. The fallback builds a
+  /// fixed-offset zone, which is right today but wrong across a DST boundary;
+  /// it exists only so a failure here degrades rather than misfires wildly.
+  Future<void> _initializeTimeZone() async {
+    tz_data.initializeTimeZones();
+    try {
+      tz.setLocalLocation(tz.getLocation(await FlutterTimezone.getLocalTimezone()));
+    } catch (_) {
+      final offset = DateTime.now().timeZoneOffset;
+      tz.setLocalLocation(tz.Location(
+        'local',
+        [0],
+        [0],
+        [tz.TimeZone(offset, isDst: false, abbreviation: 'LOC')],
+      ));
+    }
   }
 
   void _onNotificationTapped(NotificationResponse response) {
@@ -104,26 +146,73 @@ class NotificationService {
     required String body,
     String? payload,
   }) async {
-    const androidDetails = AndroidNotificationDetails(
-      _channelId,
-      'SyncUp Notifications',
-      channelDescription:
-          'Task reminders, attendance warnings, and friend activity',
-      importance: Importance.high,
-      priority: Priority.high,
-      // Matches the accent FCM applies to pushes it draws itself, so a
-      // foreground notification and a backgrounded one look the same.
-      color: AppColors.primary,
-    );
-
     await _plugin.show(
       id: id,
       title: title,
       body: body,
-      notificationDetails: const NotificationDetails(android: androidDetails),
+      notificationDetails: const NotificationDetails(android: _androidDetails),
       payload: payload,
     );
   }
+
+  /// Schedules an exact one-shot notification at [when], a device-local time.
+  ///
+  /// Returns false when [when] has already passed: a notification scheduled in
+  /// the past fires immediately, which is worse than not firing at all — the
+  /// user gets a reminder for something already due.
+  ///
+  /// Deliberately one schedule per occurrence rather than a repeating
+  /// `matchDateTimeComponents` notification: a repeat would fire on days
+  /// outside the chosen weekdays, fire even once the task was ticked off, and
+  /// could not be cancelled for a single day.
+  Future<bool> scheduleAt({
+    required int id,
+    required DateTime when,
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    await initialize();
+    if (!when.isAfter(DateTime.now())) return false;
+
+    await _plugin.zonedSchedule(
+      id: id,
+      scheduledDate: tz.TZDateTime.from(when, tz.local),
+      title: title,
+      body: body,
+      notificationDetails: const NotificationDetails(android: _androidDetails),
+      androidScheduleMode: await _scheduleMode(),
+      payload: payload,
+    );
+    return true;
+  }
+
+  /// Exact where allowed, inexact where not.
+  ///
+  /// Android 14+ denies exact alarms to most apps by default. Downgrading keeps
+  /// reminders working — they drift by minutes in Doze rather than vanishing.
+  Future<AndroidScheduleMode> _scheduleMode() async {
+    final android = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (android == null) return AndroidScheduleMode.exactAllowWhileIdle;
+    final canBeExact = await android.canScheduleExactNotifications() ?? false;
+    return canBeExact
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle;
+  }
+
+  /// Asks for the exact-alarm permission. No-op where it does not apply.
+  Future<bool> requestExactAlarmPermission() async {
+    final android = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (android == null) return true;
+    return await android.requestExactAlarmsPermission() ?? false;
+  }
+
+  /// Everything currently scheduled. The scheduler reconciles against this
+  /// rather than keeping its own bookkeeping, so it self-heals.
+  Future<List<PendingNotificationRequest>> pending() =>
+      _plugin.pendingNotificationRequests();
 
   /// Cancel a scheduled notification
   Future<void> cancel(int id) async {

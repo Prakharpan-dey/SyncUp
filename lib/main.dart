@@ -33,13 +33,23 @@ void main() async {
     // pushes that arrive while the app is dead, and it needs this entry point.
     FirebaseMessaging.onBackgroundMessage(firebaseBackgroundHandler);
 
-    // Creates the notification channel. Done at launch rather than on first
-    // use because FCM only files a backgrounded push on the channel named in
-    // the manifest if that channel already exists, and the first push can
-    // arrive before the app has shown a notification of its own.
-    await NotificationService().initialize();
   } catch (e) {
     debugPrint('Firebase unavailable, push notifications disabled: $e');
+  }
+
+  // Outside the Firebase guard on purpose. This creates the notification
+  // channel and loads the timezone database that scheduled task reminders need,
+  // neither of which involves Firebase — when it lived inside the try, a
+  // malformed google-services.json took local reminders down along with push.
+  //
+  // The channel is created at launch rather than on first use because FCM only
+  // files a backgrounded push on the channel named in the manifest if that
+  // channel already exists, and the first push can arrive before the app has
+  // shown a notification of its own.
+  try {
+    await NotificationService().initialize();
+  } catch (e) {
+    debugPrint('Local notifications unavailable: $e');
   }
 
   runApp(ProviderScope(

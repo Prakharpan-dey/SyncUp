@@ -10,6 +10,17 @@
     <!-- Scheduled local notifications survive reboot. -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 
+    <!-- Task reminders fire at a time the user chose, so they need an exact
+         alarm. Android 12 grants this outright; 13+ lets the user revoke it and
+         14+ denies it to most apps by default, so the app checks
+         canScheduleExactNotifications() and falls back to an inexact alarm
+         rather than silently scheduling nothing.
+
+         Deliberately NOT USE_EXACT_ALARM: that is reserved for alarm-clock and
+         calendar apps, and Play rejects apps that declare it without
+         qualifying. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+
     <application
         android:label="SyncUp"
         android:name="${applicationName}"
@@ -80,6 +91,32 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="syncup_default" />
+
+        <!-- flutter_local_notifications ships these receivers as Java classes
+             but does NOT declare them in its own manifest, so a host app must.
+             Without them a scheduled alarm fires into an intent that resolves
+             to nothing and no notification ever appears — not just after a
+             reboot, but ever. Nothing logs a warning; it simply never arrives.
+
+             ScheduledNotificationBootReceiver re-registers pending alarms after
+             a restart or an app update, which is what RECEIVE_BOOT_COMPLETED
+             above is for. -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
+            android:exported="false"/>
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ActionBroadcastReceiver"
+            android:exported="false"/>
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                <action android:name="android.intent.action.QUICKBOOT_POWERON"/>
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+            </intent-filter>
+        </receiver>
 
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
