@@ -140,7 +140,10 @@ class _TaskSeriesEditScreenState extends ConsumerState<TaskSeriesEditScreen> {
     await ref.read(taskViewModelProvider.notifier).stopSeries(_series!);
     if (!mounted) return;
     showAppSnackBarOn(messenger, 'Repeating task stopped');
-    context.pop();
+    // Back to the list, not back one screen: this screen is reached from the
+    // detail of a future occurrence, and stopping has just deleted it, so a
+    // plain pop would land on "Task not found".
+    context.go('/tasks');
   }
 
   @override

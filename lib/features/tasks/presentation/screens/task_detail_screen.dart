@@ -17,10 +17,40 @@ class TaskDetailScreen extends ConsumerWidget {
     final task = taskState.tasks.where((t) => t.id == taskId).firstOrNull;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    // Reachable whenever the task goes away while its detail is on the stack —
+    // an occurrence dropped by a series edit, or a stale link. A bare back
+    // arrow over an empty page reads like a crash, so name what happened and
+    // offer the way out.
     if (task == null) {
       return Scaffold(
-        appBar: AppBar(),
-        body: const Center(child: Text('Task not found')),
+        appBar: AppBar(title: const Text('TASK DETAILS')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.search_off_rounded, size: 48),
+                const SizedBox(height: 16),
+                const Text(
+                  'This task is no longer here',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'It was deleted, or a change to its repeat rule removed it.',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () => context.go('/tasks'),
+                  child: const Text('BACK TO TASKS'),
+                ),
+              ],
+            ),
+          ),
+        ),
       );
     }
 
@@ -157,6 +187,16 @@ class TaskDetailScreen extends ConsumerWidget {
                 icon: Icons.schedule_rounded,
                 label: 'DUE TIME',
                 value: DateHelpers.formatApiTime(task.dueMinutes!),
+              ),
+            ],
+            if (task.isPrivate) ...[
+              const SizedBox(height: 12),
+              _buildDetailRow(
+                context: context,
+                isDark: isDark,
+                icon: Icons.lock_outline_rounded,
+                label: 'SHARING',
+                value: 'Private - never posted to your feed',
               ),
             ],
             if (task.isRecurring) ...[
