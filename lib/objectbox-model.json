@@ -156,7 +156,7 @@
     },
     {
       "id": "4:747617318096413486",
-      "lastPropertyId": "15:7374834658510376535",
+      "lastPropertyId": "16:8575185494333725768",
       "name": "TaskOB",
       "properties": [
         {
@@ -236,6 +236,11 @@
           "id": "15:7374834658510376535",
           "name": "dueMinutes",
           "type": 6
+        },
+        {
+          "id": "16:8575185494333725768",
+          "name": "sharingOverride",
+          "type": 9
         }
       ],
       "relations": []

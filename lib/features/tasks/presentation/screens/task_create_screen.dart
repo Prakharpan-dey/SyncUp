@@ -25,6 +25,7 @@ class _TaskCreateScreenState extends ConsumerState<TaskCreateScreen> {
   DateTime? _dueDate;
   int? _dueMinutes;
   RepeatMode _repeat = RepeatMode.never;
+  bool _keepPrivate = false;
   Set<int> _weekdays = const {};
 
   bool get _isRepeating => _repeat != RepeatMode.never;
@@ -89,6 +90,7 @@ class _TaskCreateScreenState extends ConsumerState<TaskCreateScreen> {
         dueDate: _dueDate,
         priority: _priority,
         dueMinutes: _dueMinutes,
+        sharingOverride: _keepPrivate ? 'none' : null,
       );
     }
 
@@ -224,6 +226,24 @@ class _TaskCreateScreenState extends ConsumerState<TaskCreateScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+
+              // Only meaningful for a one-off: a repeating task shares through
+              // its series, which has no per-occurrence override.
+              if (!_isRepeating) ...[
+                SwitchListTile(
+                  value: _keepPrivate,
+                  onChanged:
+                      isLoading ? null : (v) => setState(() => _keepPrivate = v),
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Keep this task private'),
+                  subtitle: const Text(
+                    'Completing it will not appear in your friends feed, '
+                    'whatever your privacy setting says.',
+                  ),
+                  secondary: const Icon(Icons.lock_outline_rounded),
+                ),
+                const SizedBox(height: 8),
+              ],
 
               Text(
                 'PRIORITY',

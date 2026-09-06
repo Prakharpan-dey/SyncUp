@@ -14,12 +14,13 @@ class CreateTaskUseCase {
     TaskPriority priority = TaskPriority.medium,
     List<String> tags = const [],
     int? dueMinutes,
+    String? sharingOverride,
   }) async {
     if (title.trim().isEmpty) return const Left(ValidationFailure('Title required'));
     final task = Task(
       id: const Uuid().v4(), userId: userId, title: title.trim(),
       description: description, dueDate: dueDate, priority: priority,
-      tags: tags, dueMinutes: dueMinutes,
+      tags: tags, dueMinutes: dueMinutes, sharingOverride: sharingOverride,
       createdAt: DateTime.now(), updatedAt: DateTime.now(),
     );
     return _repo.createTask(task);

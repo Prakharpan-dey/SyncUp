@@ -3,14 +3,15 @@ import '../../domain/entities/task.dart';
 
 class TaskDto {
   final String id, userId, title, priority, status;
-  final String? description, dueDate, completedAt, seriesId, dueTime;
+  final String? description, dueDate, completedAt, seriesId, dueTime,
+      sharingOverride;
   final List<String> tags;
 
   const TaskDto({
     required this.id, required this.userId, required this.title,
     this.description, this.dueDate, required this.priority,
     required this.status, this.tags = const [], this.completedAt,
-    this.seriesId, this.dueTime,
+    this.seriesId, this.dueTime, this.sharingOverride,
   });
 
   factory TaskDto.fromJson(Map<String, dynamic> json) => TaskDto(
@@ -21,6 +22,7 @@ class TaskDto {
     completedAt: json['completed_at'],
     seriesId: json['series_id'],
     dueTime: json['due_time'],
+    sharingOverride: json['sharing_override'],
   );
 
   /// The wire payload for `POST /tasks` and `PATCH /tasks/:id`.
@@ -39,6 +41,7 @@ class TaskDto {
     if (completedAt != null) 'completed_at': completedAt,
     if (seriesId != null) 'series_id': seriesId,
     if (dueTime != null) 'due_time': dueTime,
+    if (sharingOverride != null) 'sharing_override': sharingOverride,
   };
 
   Task toDomain() => Task(
@@ -49,6 +52,7 @@ class TaskDto {
     completedAt: completedAt != null ? DateTime.parse(completedAt!) : null,
     seriesId: seriesId,
     dueMinutes: DateHelpers.parseApiTime(dueTime),
+    sharingOverride: sharingOverride,
     createdAt: DateTime.now(), updatedAt: DateTime.now(),
   );
 
@@ -61,5 +65,6 @@ class TaskDto {
     completedAt: t.completedAt?.toIso8601String(),
     seriesId: t.seriesId,
     dueTime: t.dueMinutes != null ? DateHelpers.formatApiTime(t.dueMinutes!) : null,
+    sharingOverride: t.sharingOverride,
   );
 }

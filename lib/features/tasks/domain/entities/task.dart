@@ -17,6 +17,12 @@ class Task extends Equatable {
   /// The repeating rule this task was generated from, or null for a one-off.
   final String? seriesId;
 
+  /// Per-task sharing, overriding the account default.
+  ///
+  /// Null or 'inherit' defers to the account setting; 'none' keeps this one
+  /// task private however the account is configured.
+  final String? sharingOverride;
+
   /// Local time of day the task is due, as minutes past midnight (0..1439).
   ///
   /// Minutes rather than `TimeOfDay`, which would drag Flutter into an entity
@@ -37,6 +43,7 @@ class Task extends Equatable {
     this.tags = const [],
     this.completedAt,
     this.seriesId,
+    this.sharingOverride,
     this.dueMinutes,
     required this.createdAt,
     required this.updatedAt,
@@ -45,6 +52,9 @@ class Task extends Equatable {
   bool get isCompleted => status == TaskStatus.completed;
 
   bool get isRecurring => seriesId != null;
+
+  /// Whether this task is deliberately kept out of the feed.
+  bool get isPrivate => sharingOverride == 'none';
 
   /// The instant this is actually due.
   ///
@@ -76,6 +86,7 @@ class Task extends Equatable {
     List<String>? tags,
     Object? completedAt = _cleared,
     String? seriesId,
+    Object? sharingOverride = _cleared,
     Object? dueMinutes = _cleared,
     DateTime? updatedAt,
   }) =>
@@ -92,6 +103,9 @@ class Task extends Equatable {
             ? this.completedAt
             : completedAt as DateTime?,
         seriesId: seriesId ?? this.seriesId,
+        sharingOverride: identical(sharingOverride, _cleared)
+            ? this.sharingOverride
+            : sharingOverride as String?,
         dueMinutes:
             identical(dueMinutes, _cleared) ? this.dueMinutes : dueMinutes as int?,
         createdAt: createdAt,
@@ -102,5 +116,6 @@ class Task extends Equatable {
   // or a ListView reuses the element and renders the stale row.
   @override
   List<Object?> get props =>
-      [id, title, dueDate, dueMinutes, priority, status, completedAt, seriesId];
+      [id, title, dueDate, dueMinutes, priority, status, completedAt, seriesId,
+       sharingOverride];
 }

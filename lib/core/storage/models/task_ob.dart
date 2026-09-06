@@ -20,6 +20,10 @@ class TaskOB {
   /// The repeating rule this task was generated from, or null for a one-off.
   String? seriesId;
 
+  /// Per-task sharing: 'inherit' (or null) defers to the account default,
+  /// 'none' keeps this one private, 'summary' hides its title, 'all' shares it.
+  String? sharingOverride;
+
   /// Local time of day the task is due, as minutes past midnight (0..1439).
   ///
   /// Minutes rather than a `DateTime` or a string: it stores natively, needs no
@@ -44,6 +48,7 @@ class TaskOB {
     this.tags = const [],
     this.completedAt,
     this.seriesId,
+    this.sharingOverride,
     this.dueMinutes,
     this.isSynced = false,
     DateTime? updatedAt,

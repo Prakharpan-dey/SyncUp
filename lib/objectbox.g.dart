@@ -202,7 +202,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(4, 747617318096413486),
     name: 'TaskOB',
-    lastPropertyId: const obx_int.IdUid(15, 7374834658510376535),
+    lastPropertyId: const obx_int.IdUid(16, 8575185494333725768),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -294,6 +294,12 @@ final _entities = <obx_int.ModelEntity>[
         id: const obx_int.IdUid(15, 7374834658510376535),
         name: 'dueMinutes',
         type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(16, 8575185494333725768),
+        name: 'sharingOverride',
+        type: 9,
         flags: 0,
       ),
     ],
@@ -710,7 +716,10 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final seriesIdOffset = object.seriesId == null
             ? null
             : fbb.writeString(object.seriesId!);
-        fbb.startTable(16);
+        final sharingOverrideOffset = object.sharingOverride == null
+            ? null
+            : fbb.writeString(object.sharingOverride!);
+        fbb.startTable(17);
         fbb.addInt64(0, object.obId);
         fbb.addOffset(1, idOffset);
         fbb.addOffset(2, userIdOffset);
@@ -726,6 +735,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addInt64(12, object.createdAt.millisecondsSinceEpoch);
         fbb.addOffset(13, seriesIdOffset);
         fbb.addInt64(14, object.dueMinutes);
+        fbb.addOffset(15, sharingOverrideOffset);
         fbb.finish(fbb.endTable());
         return object.obId;
       },
@@ -776,6 +786,17 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final completedAtParam = completedAtValue == null
             ? null
             : DateTime.fromMillisecondsSinceEpoch(completedAtValue);
+        final seriesIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 30);
+        final sharingOverrideParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 34);
+        final dueMinutesParam = const fb.Int64Reader().vTableGetNullable(
+          buffer,
+          rootOffset,
+          32,
+        );
         final isSyncedParam = const fb.BoolReader().vTableGet(
           buffer,
           rootOffset,
@@ -788,30 +809,24 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final createdAtParam = DateTime.fromMillisecondsSinceEpoch(
           const fb.Int64Reader().vTableGet(buffer, rootOffset, 28, 0),
         );
-        final object =
-            TaskOB(
-                obId: obIdParam,
-                id: idParam,
-                userId: userIdParam,
-                title: titleParam,
-                description: descriptionParam,
-                dueDate: dueDateParam,
-                priority: priorityParam,
-                status: statusParam,
-                tags: tagsParam,
-                completedAt: completedAtParam,
-                isSynced: isSyncedParam,
-                updatedAt: updatedAtParam,
-                createdAt: createdAtParam,
-              )
-              ..seriesId = const fb.StringReader(
-                asciiOptimization: true,
-              ).vTableGetNullable(buffer, rootOffset, 30)
-              ..dueMinutes = const fb.Int64Reader().vTableGetNullable(
-                buffer,
-                rootOffset,
-                32,
-              );
+        final object = TaskOB(
+          obId: obIdParam,
+          id: idParam,
+          userId: userIdParam,
+          title: titleParam,
+          description: descriptionParam,
+          dueDate: dueDateParam,
+          priority: priorityParam,
+          status: statusParam,
+          tags: tagsParam,
+          completedAt: completedAtParam,
+          seriesId: seriesIdParam,
+          sharingOverride: sharingOverrideParam,
+          dueMinutes: dueMinutesParam,
+          isSynced: isSyncedParam,
+          updatedAt: updatedAtParam,
+          createdAt: createdAtParam,
+        );
 
         return object;
       },
@@ -1158,6 +1173,11 @@ class TaskOB_ {
   /// See [TaskOB.dueMinutes].
   static final dueMinutes = obx.QueryIntegerProperty<TaskOB>(
     _entities[3].properties[14],
+  );
+
+  /// See [TaskOB.sharingOverride].
+  static final sharingOverride = obx.QueryStringProperty<TaskOB>(
+    _entities[3].properties[15],
   );
 }
 
