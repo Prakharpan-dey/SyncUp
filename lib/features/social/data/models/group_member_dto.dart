@@ -3,7 +3,6 @@ import '../../domain/entities/group_member.dart';
 class GroupMemberDto {
   final String groupId, userId, displayName, role;
   final String? photoUrl;
-  final String sharingOverride;
 
   const GroupMemberDto({
     required this.groupId,
@@ -11,7 +10,6 @@ class GroupMemberDto {
     required this.displayName,
     required this.role,
     this.photoUrl,
-    this.sharingOverride = 'inherit',
   });
 
   /// [groupId] is supplied by the caller because `GET /groups/:id/members`
@@ -27,7 +25,6 @@ class GroupMemberDto {
         displayName: json['display_name'] as String? ?? '',
         role: json['role'] as String? ?? 'member',
         photoUrl: json['photo_url'] as String?,
-        sharingOverride: json['sharing_override'] as String? ?? 'inherit',
       );
 
   Map<String, dynamic> toJson() => {
@@ -35,7 +32,6 @@ class GroupMemberDto {
         'user_id': userId,
         'display_name': displayName,
         'role': role,
-        'sharing_override': sharingOverride,
       };
 
   GroupMember toDomain() => GroupMember(
@@ -44,7 +40,6 @@ class GroupMemberDto {
         displayName: displayName,
         photoUrl: photoUrl,
         role: _role(role),
-        sharingOverride: _sharing(sharingOverride),
       );
 
   /// The server's roles are `owner` and `member`; the app models an owner as an
@@ -53,7 +48,4 @@ class GroupMemberDto {
         'owner' || 'admin' => GroupRole.admin,
         _ => GroupRole.member,
       };
-
-  static SharingOverride _sharing(String value) =>
-      SharingOverride.values.asNameMap()[value] ?? SharingOverride.inherit;
 }

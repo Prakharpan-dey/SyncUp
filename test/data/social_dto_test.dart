@@ -141,14 +141,10 @@ void main() {
       expect(member.role, GroupRole.member);
     });
 
-    test('defaults sharing_override, which the API never sends', () {
-      final member = GroupMemberDto.fromJson(
-        fixtureList('group_members').first,
-        groupId: 'g',
-      ).toDomain();
-
-      expect(member.sharingOverride, SharingOverride.inherit);
-    });
+    // A per-group sharing override used to be parsed here from a field the
+    // server never sends, and read by nothing. It has been removed: group
+    // membership has no sharing control behind it, and modelling one implied a
+    // setting the app could not honour.
   });
 
   group('user search — GET /users/search', () {

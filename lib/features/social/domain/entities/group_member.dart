@@ -2,7 +2,12 @@ import 'package:equatable/equatable.dart';
 
 enum GroupRole { admin, member }
 
-enum SharingOverride { inherit, none, summary, selected, all }
+// A per-group SharingOverride was modelled here, parsed from a `sharing_override`
+// field the server has never sent, and read by nothing. It described a control
+// that does not exist: group membership currently means every shared completion
+// reaches every group, with no opt-out. Removed rather than left in place, so
+// the model stops implying a setting the app cannot honour. Per-task privacy is
+// the control that does work — see Task.sharingOverride.
 
 class GroupMember extends Equatable {
   final String groupId;
@@ -10,7 +15,6 @@ class GroupMember extends Equatable {
   final String displayName;
   final String? photoUrl;
   final GroupRole role;
-  final SharingOverride sharingOverride;
 
   const GroupMember({
     required this.groupId,
@@ -18,7 +22,6 @@ class GroupMember extends Equatable {
     required this.displayName,
     this.photoUrl,
     this.role = GroupRole.member,
-    this.sharingOverride = SharingOverride.inherit,
   });
 
   bool get isAdmin => role == GroupRole.admin;
