@@ -657,8 +657,11 @@ class _SubjectDetailScreenState extends ConsumerState<SubjectDetailScreen> {
       subtitle =
           'Miss ${safeToSkip == 1 ? "another" : "more than $safeToSkip"} and you drop under $thresholdPct%.';
     } else if (isAboveThreshold && safeToSkip == 0) {
-      title = 'AT THRESHOLD';
-      subtitle = 'You\'re right at $thresholdPct%. Don\'t skip any classes!';
+      // No buffer left, which is not the same as sitting at the threshold: at
+      // 1 of 1 (100%) one miss already gives 1 of 2 (50%). This used to say
+      // "You're right at 75%" under a big 100%.
+      title = 'NO SKIPS LEFT';
+      subtitle = 'Miss the next class and you drop under $thresholdPct%.';
     } else if (!isAboveThreshold && classesNeeded > 0) {
       title = 'NEED $classesNeeded MORE';
       subtitle =
