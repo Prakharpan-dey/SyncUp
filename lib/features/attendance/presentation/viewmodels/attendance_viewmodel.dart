@@ -68,8 +68,11 @@ class AttendanceViewModel extends Notifier<AttendanceState> {
     state = state.copyWith(isLoading: true, error: null);
     final result =
         await ref.read(attendanceRepositoryProvider).getSubjects(userId);
-    result.fold(
-      (f) => state = state.copyWith(isLoading: false, error: f.message),
+    // Awaited: the success branch is async, and without the await this method
+    // returned before any sessions were loaded — so pull-to-refresh finished
+    // early and callers could not rely on the state being populated.
+    await result.fold(
+      (f) async => state = state.copyWith(isLoading: false, error: f.message),
       (subjects) async {
         // Also load all sessions for every subject so list screen shows
         // correct percentages and class counts immediately.
@@ -135,7 +138,17 @@ class AttendanceViewModel extends Notifier<AttendanceState> {
         .getSessionsForSubject(subjectId);
     result.fold(
       (f) => state = state.copyWith(isLoading: false, error: f.message),
-      (sessions) => state = state.copyWith(isLoading: false, sessions: sessions),
+      (sessions) {
+        // Merged, not replaced. `sessions` is shared with the subject list,
+        // which computes every card from it — replacing it with one subject's
+        // sessions made every other subject read "No classes logged" as soon
+        // as you came back from a detail screen.
+        final merged = [
+          ...state.sessions.where((s) => s.subjectId != subjectId),
+          ...sessions,
+        ]..sort((a, b) => b.sessionDate.compareTo(a.sessionDate));
+        state = state.copyWith(isLoading: false, sessions: merged);
+      },
     );
   }
 
