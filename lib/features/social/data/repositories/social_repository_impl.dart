@@ -101,10 +101,10 @@ class SocialRepositoryImpl implements SocialRepository {
     final guard = _offlineGuard();
     if (guard != null) return guard;
     try {
-      final data = await _remote.sendFriendRequest({
-        'requester_id': requesterId,
-        'receiver_id': receiverId,
-      });
+      // The API takes the sender from the auth token and validates the body
+      // as exactly {addressee_id}. The old {requester_id, receiver_id} failed
+      // that check every time, so no friend request could ever be sent.
+      final data = await _remote.sendFriendRequest({'addressee_id': receiverId});
       return Right(FriendshipDto.fromJson(data).toDomain());
     } catch (e) {
       return Left(_mapError(e));
@@ -119,6 +119,16 @@ class SocialRepositoryImpl implements SocialRepository {
     final guard = _offlineGuard();
     if (guard != null) return guard;
     try {
+      // The API only accepts {status: accepted|blocked}; there is no rejected
+      // status, so declining sent a body it could never validate. Declining
+      // is deleting the pending row, which DELETE /friends/:id allows for
+      // either party. Sending `blocked` instead would silently block them.
+      if (response == FriendshipStatus.rejected) {
+        await _remote.removeFriend(requestId);
+        return Right(FriendshipDto.fromJson(
+          {'id': requestId, 'status': FriendshipStatus.rejected.name},
+        ).toDomain());
+      }
       final data = await _remote.respondToRequest(
           requestId, {'status': response.name});
       return Right(FriendshipDto.fromJson(data).toDomain());
@@ -148,8 +158,9 @@ class SocialRepositoryImpl implements SocialRepository {
     if (guard != null) return guard;
     try {
       await _remote.blockUser({
-        'user_id': userId,
-        'blocked_user_id': blockedUserId,
+        // `user_id` is the person being blocked — the API takes the blocker
+        // from the auth token. Sending our own id asked it to block ourselves.
+        'user_id': blockedUserId,
       });
       return const Right(null);
     } catch (e) {

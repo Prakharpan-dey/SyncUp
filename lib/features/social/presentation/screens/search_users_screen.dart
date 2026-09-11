@@ -103,7 +103,8 @@ class _SearchUsersScreenState extends ConsumerState<SearchUsersScreen> {
             ),
           ),
 
-          // Error (offline message)
+          // Any failure, not just being offline — a server rejection shown under
+          // a wifi-off icon reads as a connection problem.
           if (state.error != null)
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -114,7 +115,7 @@ class _SearchUsersScreenState extends ConsumerState<SearchUsersScreen> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.wifi_off_rounded,
+                  const Icon(Icons.error_outline_rounded,
                       color: Colors.black, size: 20),
                   const SizedBox(width: 10),
                   Expanded(
