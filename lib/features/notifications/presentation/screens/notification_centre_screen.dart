@@ -31,6 +31,12 @@ class _NotificationCentreScreenState
 
     return Scaffold(
       appBar: AppBar(
+        // Opened from Profile, this is pushed and the router supplies the back
+        // arrow. A tapped push notification opens it with go() instead, leaving
+        // nothing underneath — so offer the way out rather than a dead end.
+        leading: context.canPop()
+            ? null
+            : BackButton(onPressed: () => context.go('/profile')),
         title: const Text('NOTIFICATIONS'),
         actions: [
           if (state.unreadCount > 0)

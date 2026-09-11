@@ -31,7 +31,9 @@ class ProfileScreen extends ConsumerWidget {
           if (!isGuest)
             IconButton(
               icon: const Icon(Icons.notifications_outlined),
-              onPressed: () => context.go('/notifications'),
+              // Pushed, not go'd: /notifications sits outside the tab shell,
+              // so go() replaced the whole stack and left no way back.
+              onPressed: () => context.push('/notifications'),
             ),
         ],
       ),
