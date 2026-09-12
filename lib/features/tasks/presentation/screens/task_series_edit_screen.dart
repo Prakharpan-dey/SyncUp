@@ -146,6 +146,41 @@ class _TaskSeriesEditScreenState extends ConsumerState<TaskSeriesEditScreen> {
     context.go('/tasks');
   }
 
+  /// Unlike stopping, nothing of the rule is kept: every pending day goes,
+  /// missed past ones included. Completed days stay as ordinary tasks.
+  Future<void> _confirmDelete() async {
+    final delete = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('DELETE REPEATING TASK'),
+        content: const Text(
+          'Removes the repeating rule and every day not yet completed, missed '
+          'ones included. Days you completed stay in your history.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('CANCEL'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('DELETE'),
+          ),
+        ],
+      ),
+    );
+    if (delete != true || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    await ref
+        .read(taskViewModelProvider.notifier)
+        .deleteSeriesPermanently(_series!.id, _series!.userId);
+    if (!mounted) return;
+    showAppSnackBarOn(messenger, 'Repeating task deleted');
+    context.go('/tasks');
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) {
@@ -270,6 +305,11 @@ class _TaskSeriesEditScreenState extends ConsumerState<TaskSeriesEditScreen> {
                 onPressed: _saving ? null : _confirmStop,
                 style: TextButton.styleFrom(foregroundColor: AppColors.error),
                 child: const Text('STOP REPEATING'),
+              ),
+              TextButton(
+                onPressed: _saving ? null : _confirmDelete,
+                style: TextButton.styleFrom(foregroundColor: AppColors.error),
+                child: const Text('DELETE REPEATING TASK'),
               ),
             ],
           ),

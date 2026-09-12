@@ -12,5 +12,8 @@ abstract interface class TaskSeriesRepository {
 
   Future<Either<Failure, TaskSeries>> updateSeries(TaskSeries series);
 
-  Future<Either<Failure, void>> deleteSeries(String seriesId);
+  /// With [deletePending], the server also deletes the series' pending days;
+  /// completed ones stay, detached. Without it, every day is kept.
+  Future<Either<Failure, void>> deleteSeries(String seriesId,
+      {bool deletePending = false});
 }

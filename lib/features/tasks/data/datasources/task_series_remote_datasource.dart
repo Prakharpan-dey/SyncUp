@@ -22,7 +22,9 @@ class TaskSeriesRemoteDataSource {
     return res.data as Map<String, dynamic>;
   }
 
-  Future<void> deleteSeries(String seriesId) async {
-    await _dio.delete('/task-series/$seriesId');
+  Future<void> deleteSeries(String seriesId,
+      {bool deletePending = false}) async {
+    await _dio.delete('/task-series/$seriesId',
+        queryParameters: deletePending ? const {'pending': 'delete'} : null);
   }
 }

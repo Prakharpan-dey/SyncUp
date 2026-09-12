@@ -258,6 +258,31 @@ class TaskRepositoryImpl implements TaskRepository {
   }
 
   @override
+  Future<Either<Failure, void>> removeSeriesLocally(String seriesId) async {
+    try {
+      final q = _box.query(TaskOB_.seriesId.equals(seriesId)).build();
+      final rows = q.find();
+      q.close();
+
+      final pending = <int>[];
+      final completed = <TaskOB>[];
+      for (final row in rows) {
+        if (row.status == TaskStatus.completed.name) {
+          row.seriesId = null;
+          completed.add(row);
+        } else {
+          pending.add(row.obId);
+        }
+      }
+      _box.removeMany(pending);
+      _box.putMany(completed);
+      return const Right(null);
+    } catch (e) {
+      return Left(CacheFailure(e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, void>> deleteTask(String taskId) async {
     try {
       final q = _box.query(TaskOB_.id.equals(taskId)).build();

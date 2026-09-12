@@ -144,7 +144,12 @@ class SyncManager {
       case ('task_series', 'UPDATE'):
         await _dio.patch('/task-series/$id', data: payload);
       case ('task_series', 'DELETE'):
-        await _dio.delete('/task-series/$id');
+        // A permanent delete carries its flag in the payload, so replaying
+        // it offline still takes the pending days with it.
+        await _dio.delete('/task-series/$id',
+            queryParameters: payload['pending'] == 'delete'
+                ? const {'pending': 'delete'}
+                : null);
 
       case ('subject', 'CREATE'):
         await _dio.post('/subjects', data: payload);

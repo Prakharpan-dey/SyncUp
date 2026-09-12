@@ -276,6 +276,20 @@ class TaskViewModel extends Notifier<TaskListState> {
     await loadTasks(series.userId);
   }
 
+  /// Deletes the rule and every pending day — missed past ones included.
+  /// Completed days stay as ordinary tasks, so history and streaks survive.
+  ///
+  /// Unlike [stopSeries], nothing of the rule is kept. The days are cleared
+  /// locally in one pass rather than one outbox DELETE each: the server
+  /// removes them itself when the series goes with its pending days.
+  Future<void> deleteSeriesPermanently(String seriesId, String userId) async {
+    await ref.read(taskRepositoryProvider).removeSeriesLocally(seriesId);
+    await ref
+        .read(taskSeriesRepositoryProvider)
+        .deleteSeries(seriesId, deletePending: true);
+    await loadTasks(userId);
+  }
+
   Future<void> toggleCompletion(Task task) async {
     final result = await ref.read(toggleCompletionUseCaseProvider)(task);
     await result.fold(

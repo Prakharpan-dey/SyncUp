@@ -73,9 +73,14 @@ class TaskDetailScreen extends ConsumerWidget {
               showDialog(
                 context: context,
                 builder: (ctx) => AlertDialog(
-                  title: const Text('DELETE TASK'),
-                  content: const Text(
-                      'Are you sure you want to delete this task?'),
+                  title: Text(task.isRecurring
+                      ? 'DELETE REPEATING TASK'
+                      : 'DELETE TASK'),
+                  content: Text(task.isRecurring
+                      ? 'Delete just this day, or the whole repeating task? '
+                          'Days you already completed stay in your history '
+                          'either way.'
+                      : 'Are you sure you want to delete this task?'),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(ctx),
@@ -89,9 +94,24 @@ class TaskDetailScreen extends ConsumerWidget {
                         Navigator.pop(ctx);
                         context.pop();
                       },
-                      child: const Text('DELETE',
-                          style: TextStyle(color: AppColors.error)),
+                      child: Text(task.isRecurring ? 'THIS DAY' : 'DELETE',
+                          style: const TextStyle(color: AppColors.error)),
                     ),
+                    // Deleting used to remove one day only, while the rule
+                    // kept generating the rest.
+                    if (task.isRecurring)
+                      TextButton(
+                        onPressed: () async {
+                          Navigator.pop(ctx);
+                          await ref
+                              .read(taskViewModelProvider.notifier)
+                              .deleteSeriesPermanently(
+                                  task.seriesId!, task.userId);
+                          if (context.mounted) context.go('/tasks');
+                        },
+                        child: const Text('WHOLE TASK',
+                            style: TextStyle(color: AppColors.error)),
+                      ),
                   ],
                 ),
               );

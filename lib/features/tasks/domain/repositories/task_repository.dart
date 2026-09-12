@@ -16,4 +16,9 @@ abstract interface class TaskRepository {
   Future<Either<Failure, Task>> updateTask(Task task);
   Future<Either<Failure, Task>> toggleCompletion(Task task);
   Future<Either<Failure, void>> deleteTask(String taskId);
+
+  /// Local only: removes [seriesId]'s pending days and detaches its completed
+  /// ones. No outbox traffic — the server does the same itself when the series
+  /// is deleted with its pending days.
+  Future<Either<Failure, void>> removeSeriesLocally(String seriesId);
 }

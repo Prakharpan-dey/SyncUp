@@ -85,7 +85,7 @@ class Task extends Equatable {
     TaskStatus? status,
     List<String>? tags,
     Object? completedAt = _cleared,
-    String? seriesId,
+    Object? seriesId = _cleared,
     Object? sharingOverride = _cleared,
     Object? dueMinutes = _cleared,
     DateTime? updatedAt,
@@ -102,7 +102,9 @@ class Task extends Equatable {
         completedAt: identical(completedAt, _cleared)
             ? this.completedAt
             : completedAt as DateTime?,
-        seriesId: seriesId ?? this.seriesId,
+        // Clearable: deleting a series detaches the days that were completed.
+        seriesId:
+            identical(seriesId, _cleared) ? this.seriesId : seriesId as String?,
         sharingOverride: identical(sharingOverride, _cleared)
             ? this.sharingOverride
             : sharingOverride as String?,

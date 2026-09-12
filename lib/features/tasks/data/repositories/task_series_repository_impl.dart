@@ -148,7 +148,8 @@ class TaskSeriesRepositoryImpl implements TaskSeriesRepository {
   }
 
   @override
-  Future<Either<Failure, void>> deleteSeries(String seriesId) async {
+  Future<Either<Failure, void>> deleteSeries(String seriesId,
+      {bool deletePending = false}) async {
     try {
       final q = _box.query(TaskSeriesOB_.id.equals(seriesId)).build();
       final local = q.findFirst();
@@ -158,8 +159,11 @@ class TaskSeriesRepositoryImpl implements TaskSeriesRepository {
       _pushOrEnqueueAsync(
         operationType: 'DELETE',
         entityId: seriesId,
-        payload: {'id': seriesId},
-        remoteFn: () => _remote.deleteSeries(seriesId),
+        // The flag rides in the payload so a delete queued offline still
+        // takes the pending days with it when SyncManager replays it.
+        payload: {'id': seriesId, if (deletePending) 'pending': 'delete'},
+        remoteFn: () =>
+            _remote.deleteSeries(seriesId, deletePending: deletePending),
       );
       return const Right(null);
     } catch (e) {

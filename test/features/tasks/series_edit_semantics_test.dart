@@ -15,6 +15,13 @@ import 'package:syncup/features/tasks/presentation/viewmodels/task_viewmodel.dar
 class _FakeTaskRepo implements TaskRepository {
   final updated = <Task>[];
   final deleted = <String>[];
+  final removedSeries = <String>[];
+
+  @override
+  Future<Either<Failure, void>> removeSeriesLocally(String seriesId) async {
+    removedSeries.add(seriesId);
+    return const Right(null);
+  }
 
   @override
   Future<Either<Failure, Task>> updateTask(Task task) async {
@@ -67,9 +74,14 @@ class _FakeSeriesRepo implements TaskSeriesRepository {
   Future<Either<Failure, List<TaskSeries>>> getSeries(String userId) async =>
       const Right([]);
 
+  final deletedSeries = <(String, bool)>[];
+
   @override
-  Future<Either<Failure, void>> deleteSeries(String seriesId) async =>
-      const Right(null);
+  Future<Either<Failure, void>> deleteSeries(String seriesId,
+      {bool deletePending = false}) async {
+    deletedSeries.add((seriesId, deletePending));
+    return const Right(null);
+  }
 }
 
 /// Seeds the task list and neutralises the reload, which would otherwise pull
@@ -248,6 +260,33 @@ void main() {
           .stopSeries(series());
 
       expect(seriesRepo.saved.single.active, isFalse);
+    });
+  });
+
+  /// Deleting used to remove one day only, and the rule kept generating.
+  group('deleting a series permanently', () {
+    test('clears the days locally and deletes the rule with its pending days',
+        () async {
+      final container = containerWith([occurrence('occ-1', today)]);
+      addTearDown(container.dispose);
+
+      await container
+          .read(taskViewModelProvider.notifier)
+          .deleteSeriesPermanently('s1', 'u1');
+
+      expect(tasks.removedSeries, ['s1']);
+      expect(seriesRepo.deletedSeries, [('s1', true)]);
+      // Not one DELETE per day — the server removes them with the series.
+      expect(tasks.deleted, isEmpty);
+    });
+
+    /// Completed days are detached, not deleted, so they need a way to lose
+    /// the series id.
+    test('a task can be detached from its series', () {
+      final task = occurrence('occ-2', today, status: TaskStatus.completed);
+
+      expect(task.copyWith(seriesId: null).seriesId, isNull);
+      expect(task.copyWith(title: 'Renamed').seriesId, 's1');
     });
   });
 }
