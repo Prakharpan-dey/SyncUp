@@ -27,6 +27,10 @@ class NotificationCard extends StatelessWidget {
         return Icons.favorite_rounded;
       case NotificationType.comment:
         return Icons.chat_bubble_rounded;
+      case NotificationType.groupRequest:
+        return Icons.group_add_rounded;
+      case NotificationType.groupInvite:
+        return Icons.mail_rounded;
     }
   }
 
@@ -42,6 +46,10 @@ class NotificationCard extends StatelessWidget {
         return AppColors.error;
       case NotificationType.comment:
         return AppColors.info;
+      case NotificationType.groupRequest:
+        return AppColors.primary;
+      case NotificationType.groupInvite:
+        return AppColors.accent;
     }
   }
 

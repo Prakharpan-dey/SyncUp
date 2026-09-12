@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/auth/current_user.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/neo_brutalism.dart';
+import '../../../../core/widgets/app_snack_bar.dart';
+import '../../domain/entities/group_invite.dart';
 import '../viewmodels/social_viewmodel.dart';
 
 class GroupListScreen extends ConsumerStatefulWidget {
@@ -19,9 +21,11 @@ class _GroupListScreenState extends ConsumerState<GroupListScreen> {
     super.initState();
     Future.microtask(() {
       if (!mounted) return;
-      ref
-          .read(socialViewModelProvider.notifier)
-          .loadGroups(ref.read(currentUserIdProvider));
+      final vm = ref.read(socialViewModelProvider.notifier);
+      vm.loadGroups(ref.read(currentUserIdProvider));
+      // A group you are only invited to stays out of the list until you
+      // accept; the invite is the one thing you can see of it.
+      vm.loadMyInvites();
     });
   }
 
@@ -63,6 +67,131 @@ class _GroupListScreenState extends ConsumerState<GroupListScreen> {
     );
   }
 
+  /// The invite menu copies a code; this is where it goes. Joining by code
+  /// files a request the group's admin approves.
+  void _showJoinWithCodeDialog() {
+    final codeCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('JOIN WITH CODE'),
+        content: TextField(
+          controller: codeCtrl,
+          decoration: const InputDecoration(
+            hintText: 'Invite code',
+            prefixIcon: Icon(Icons.key_rounded),
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('CANCEL'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final code = codeCtrl.text.trim();
+              if (code.isEmpty) return;
+              Navigator.pop(ctx);
+              context.push('/groups/join/${Uri.encodeComponent(code)}');
+            },
+            child: const Text('JOIN'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _answerInvite(GroupInvite invite, {required bool accept}) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final vm = ref.read(socialViewModelProvider.notifier);
+    if (accept) {
+      final joined = await vm.acceptInvite(invite.id);
+      if (!mounted) return;
+      showAppSnackBarOn(
+        messenger,
+        joined
+            ? 'You joined ${invite.groupName}'
+            : ref.read(socialViewModelProvider).error ?? 'Could not join',
+        isError: !joined,
+      );
+    } else {
+      await vm.declineInvite(invite.id);
+      if (!mounted) return;
+      final error = ref.read(socialViewModelProvider).error;
+      showAppSnackBarOn(messenger, error ?? 'Invite declined',
+          isError: error != null);
+    }
+  }
+
+  Widget _buildInvites(BuildContext context, SocialState state, bool isDark) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'INVITES (${state.myInvites.length})',
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.0,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ...state.myInvites.map((invite) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: NeoBrutalism.cardDecoration(isDark: isDark),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            invite.groupName,
+                            style: theme.textTheme.bodyLarge
+                                ?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                          if (invite.invitedByName != null)
+                            Text(
+                              'Invited by ${invite.invitedByName}',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: isDark
+                                    ? AppColors.textSecondaryDark
+                                    : AppColors.textSecondary,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.check_rounded),
+                      color: AppColors.success,
+                      tooltip: 'Accept',
+                      onPressed: () => _answerInvite(invite, accept: true),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      color: AppColors.error,
+                      tooltip: 'Decline',
+                      onPressed: () => _answerInvite(invite, accept: false),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(socialViewModelProvider);
@@ -71,8 +200,19 @@ class _GroupListScreenState extends ConsumerState<GroupListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('GROUPS'),
+        actions: [
+          TextButton.icon(
+            onPressed: _showJoinWithCodeDialog,
+            icon: const Icon(Icons.key_rounded, size: 18),
+            label: const Text('JOIN WITH CODE'),
+          ),
+        ],
       ),
-      body: state.isLoading && state.groups.isEmpty
+      body: Column(
+        children: [
+          if (state.myInvites.isNotEmpty) _buildInvites(context, state, isDark),
+          Expanded(
+            child: state.isLoading && state.groups.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : state.groups.isEmpty
               ? _buildEmptyState(context, isDark)
@@ -142,6 +282,9 @@ class _GroupListScreenState extends ConsumerState<GroupListScreen> {
                     );
                   },
                 ),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showCreateGroupDialog,
         icon: const Icon(Icons.add_rounded),

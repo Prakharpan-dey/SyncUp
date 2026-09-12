@@ -36,6 +36,8 @@ class AppNotificationDto {
       'friend_request': NotificationType.friendRequest,
       'reaction': NotificationType.reaction,
       'comment': NotificationType.comment,
+      'group_request': NotificationType.groupRequest,
+      'group_invite': NotificationType.groupInvite,
     };
 
     return AppNotification(

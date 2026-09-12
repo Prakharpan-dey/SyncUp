@@ -4,6 +4,8 @@ import '../../../../core/error/failures.dart';
 import '../../../../core/sync/connectivity_service.dart';
 import '../../domain/entities/friendship.dart';
 import '../../domain/entities/group.dart';
+import '../../domain/entities/group_invite.dart';
+import '../../domain/entities/group_join_request.dart';
 import '../../domain/entities/group_member.dart';
 import '../../domain/entities/user_summary.dart';
 import '../../domain/repositories/social_repository.dart';
@@ -11,6 +13,8 @@ import '../datasources/social_remote_datasource.dart';
 import '../models/user_summary_dto.dart';
 import '../models/friendship_dto.dart';
 import '../models/group_dto.dart';
+import '../models/group_invite_dto.dart';
+import '../models/group_join_request_dto.dart';
 import '../models/group_member_dto.dart';
 
 class SocialRepositoryImpl implements SocialRepository {
@@ -226,12 +230,143 @@ class SocialRepositoryImpl implements SocialRepository {
   }
 
   @override
-  Future<Either<Failure, void>> joinGroup(
+  Future<Either<Failure, bool>> joinGroup(
       String inviteToken, String userId) async {
     final guard = _offlineGuard();
     if (guard != null) return guard;
     try {
-      await _remote.joinGroup(inviteToken, userId);
+      final data = await _remote.joinGroup(inviteToken, userId);
+      return Right(data['status'] == 'pending');
+    } catch (e) {
+      return Left(_mapError(e));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<GroupJoinRequest>>> getJoinRequests(
+      String groupId) async {
+    final guard = _offlineGuard();
+    if (guard != null) return guard;
+    try {
+      final data = await _remote.getJoinRequests(groupId);
+      return Right(
+          data.map((j) => GroupJoinRequestDto.fromJson(j).toDomain()).toList());
+    } catch (e) {
+      return Left(_mapError(e));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> approveJoinRequest({
+    required String groupId,
+    required String requestId,
+  }) async {
+    final guard = _offlineGuard();
+    if (guard != null) return guard;
+    try {
+      await _remote.approveJoinRequest(groupId, requestId);
+      return const Right(null);
+    } catch (e) {
+      return Left(_mapError(e));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> rejectJoinRequest({
+    required String groupId,
+    required String requestId,
+  }) async {
+    final guard = _offlineGuard();
+    if (guard != null) return guard;
+    try {
+      await _remote.rejectJoinRequest(groupId, requestId);
+      return const Right(null);
+    } catch (e) {
+      return Left(_mapError(e));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> inviteToGroup({
+    required String groupId,
+    String? username,
+    String? email,
+    String? userId,
+  }) async {
+    final guard = _offlineGuard();
+    if (guard != null) return guard;
+    try {
+      final data = await _remote.inviteToGroup(groupId, {
+        'username': ?username,
+        'email': ?email,
+        'user_id': ?userId,
+      });
+      return Right(data['status'] as String? ?? 'invited');
+    } catch (e) {
+      return Left(_mapError(e));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<SentGroupInvite>>> getGroupInvites(
+      String groupId) async {
+    final guard = _offlineGuard();
+    if (guard != null) return guard;
+    try {
+      final data = await _remote.getGroupInvites(groupId);
+      return Right(
+          data.map((j) => SentGroupInviteDto.fromJson(j).toDomain()).toList());
+    } catch (e) {
+      return Left(_mapError(e));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> cancelInvite({
+    required String groupId,
+    required String inviteId,
+  }) async {
+    final guard = _offlineGuard();
+    if (guard != null) return guard;
+    try {
+      await _remote.cancelInvite(groupId, inviteId);
+      return const Right(null);
+    } catch (e) {
+      return Left(_mapError(e));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<GroupInvite>>> getMyInvites() async {
+    final guard = _offlineGuard();
+    if (guard != null) return guard;
+    try {
+      final data = await _remote.getMyInvites();
+      return Right(
+          data.map((j) => GroupInviteDto.fromJson(j).toDomain()).toList());
+    } catch (e) {
+      return Left(_mapError(e));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> acceptInvite(String inviteId) async {
+    final guard = _offlineGuard();
+    if (guard != null) return guard;
+    try {
+      await _remote.acceptInvite(inviteId);
+      return const Right(null);
+    } catch (e) {
+      return Left(_mapError(e));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> declineInvite(String inviteId) async {
+    final guard = _offlineGuard();
+    if (guard != null) return guard;
+    try {
+      await _remote.declineInvite(inviteId);
       return const Right(null);
     } catch (e) {
       return Left(_mapError(e));

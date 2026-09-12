@@ -7,6 +7,7 @@ import 'package:syncup/core/error/failures.dart';
 import 'package:syncup/features/social/di/social_providers.dart';
 import 'package:syncup/features/social/domain/entities/friendship.dart';
 import 'package:syncup/features/social/domain/entities/group.dart';
+import 'package:syncup/features/social/domain/entities/group_invite.dart';
 import 'package:syncup/features/social/domain/entities/group_member.dart';
 import 'package:syncup/features/social/domain/entities/user_summary.dart';
 import 'package:syncup/features/social/domain/repositories/social_repository.dart';
@@ -59,6 +60,12 @@ void main() {
   Future<void> loadDetail() async {
     when(() => repo.getGroupDetail(groupId))
         .thenAnswer((_) async => Right(aGroup()));
+    // The owner's detail view also loads anyone waiting to join, and the
+    // invites the group has sent.
+    when(() => repo.getJoinRequests(groupId))
+        .thenAnswer((_) async => const Right([]));
+    when(() => repo.getGroupInvites(groupId))
+        .thenAnswer((_) async => const Right([]));
     when(() => repo.getGroupMembers(groupId)).thenAnswer((_) async => Right([
           member(owner, 'Group Owner'),
           member(memberA, 'Rhea Menon'),
@@ -173,6 +180,62 @@ void main() {
       );
 
       verifyNever(() => repo.getFriends(any()));
+    });
+  });
+
+  group('group invites', () {
+    final invite = GroupInvite(
+      id: 'inv-1',
+      groupId: groupId,
+      groupName: 'DBMS Study Group',
+      invitedByName: 'Rhea Menon',
+      createdAt: DateTime(2026, 9, 12),
+    );
+
+    test('accepting drops the invite and shows the group it joined', () async {
+      when(() => repo.getMyInvites()).thenAnswer((_) async => Right([invite]));
+      when(() => repo.acceptInvite('inv-1'))
+          .thenAnswer((_) async => const Right(null));
+      when(() => repo.getGroups(owner))
+          .thenAnswer((_) async => Right([aGroup()]));
+      await vm().loadMyInvites();
+
+      final joined = await vm().acceptInvite('inv-1');
+
+      expect(joined, isTrue);
+      expect(state().myInvites, isEmpty);
+      expect(state().groups.single.id, groupId);
+    });
+
+    test('declining drops the invite and joins nothing', () async {
+      when(() => repo.getMyInvites()).thenAnswer((_) async => Right([invite]));
+      when(() => repo.declineInvite('inv-1'))
+          .thenAnswer((_) async => const Right(null));
+      await vm().loadMyInvites();
+
+      await vm().declineInvite('inv-1');
+
+      expect(state().myInvites, isEmpty);
+      verifyNever(() => repo.getGroups(any()));
+    });
+
+    /// "No SyncUp account with that email" is an answer for the sheet, not a
+    /// banner over the whole group screen.
+    test('an unknown email comes back as the answer, not a screen error',
+        () async {
+      when(() => repo.inviteToGroup(
+                groupId: groupId,
+                email: 'nobody@example.com',
+              ))
+          .thenAnswer((_) async =>
+              const Left(ServerFailure('No SyncUp account with that email')));
+
+      final result = await vm()
+          .inviteToGroup(groupId: groupId, email: 'nobody@example.com');
+
+      expect(result.ok, isFalse);
+      expect(result.message, 'No SyncUp account with that email');
+      expect(state().error, isNull);
     });
   });
 }

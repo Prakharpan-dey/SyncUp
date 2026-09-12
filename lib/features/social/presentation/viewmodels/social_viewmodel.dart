@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/auth/current_user.dart';
 import '../../domain/entities/friendship.dart';
 import '../../domain/entities/group.dart';
+import '../../domain/entities/group_invite.dart';
+import '../../domain/entities/group_join_request.dart';
 import '../../domain/entities/group_member.dart';
 import '../../domain/entities/user_summary.dart';
 import '../../di/social_providers.dart';
@@ -13,6 +15,15 @@ class SocialState {
   final List<Group> groups;
   final Group? selectedGroup;
   final List<GroupMember> groupMembers;
+
+  /// Waiting to join [selectedGroup]. Only ever filled for its owner or admins.
+  final List<GroupJoinRequest> joinRequests;
+
+  /// Invites [selectedGroup] has sent that are still unanswered — admins only.
+  final List<SentGroupInvite> sentInvites;
+
+  /// Invites waiting on the current user, from any group.
+  final List<GroupInvite> myInvites;
   final bool isLoading;
   final String? error;
 
@@ -23,6 +34,9 @@ class SocialState {
     this.groups = const [],
     this.selectedGroup,
     this.groupMembers = const [],
+    this.joinRequests = const [],
+    this.sentInvites = const [],
+    this.myInvites = const [],
     this.isLoading = false,
     this.error,
   });
@@ -34,6 +48,9 @@ class SocialState {
     List<Group>? groups,
     Group? selectedGroup,
     List<GroupMember>? groupMembers,
+    List<GroupJoinRequest>? joinRequests,
+    List<SentGroupInvite>? sentInvites,
+    List<GroupInvite>? myInvites,
     bool? isLoading,
     String? error,
   }) =>
@@ -44,6 +61,9 @@ class SocialState {
         groups: groups ?? this.groups,
         selectedGroup: selectedGroup ?? this.selectedGroup,
         groupMembers: groupMembers ?? this.groupMembers,
+        joinRequests: joinRequests ?? this.joinRequests,
+        sentInvites: sentInvites ?? this.sentInvites,
+        myInvites: myInvites ?? this.myInvites,
         isLoading: isLoading ?? this.isLoading,
         error: error,
       );
@@ -93,7 +113,8 @@ class SocialViewModel extends Notifier<SocialState> {
     );
   }
 
-  Future<void> sendFriendRequest({
+  /// Whether the request was sent.
+  Future<bool> sendFriendRequest({
     required String requesterId,
     required String receiverId,
   }) async {
@@ -102,14 +123,18 @@ class SocialViewModel extends Notifier<SocialState> {
       requesterId: requesterId,
       receiverId: receiverId,
     );
-    result.fold(
-      (f) => state = state.copyWith(error: f.message),
+    return result.fold(
+      (f) {
+        state = state.copyWith(error: f.message);
+        return false;
+      },
       (_) {
-        // Remove from search results to indicate request sent
+        // Dropped from the results — the screen says the request went out.
         state = state.copyWith(
           searchResults:
               state.searchResults.where((u) => u.id != receiverId).toList(),
         );
+        return true;
       },
     );
   }
@@ -192,7 +217,12 @@ class SocialViewModel extends Notifier<SocialState> {
   }
 
   Future<void> loadGroupDetail(String groupId) async {
-    state = state.copyWith(isLoading: true, error: null);
+    // Cleared first so one group's waiting list never shows under another.
+    state = state.copyWith(
+        isLoading: true,
+        error: null,
+        joinRequests: const [],
+        sentInvites: const []);
     final detailResult =
         await ref.read(socialRepositoryProvider).getGroupDetail(groupId);
     final membersResult =
@@ -208,6 +238,145 @@ class SocialViewModel extends Notifier<SocialState> {
               isLoading: false, selectedGroup: group, groupMembers: members),
         );
       },
+    );
+
+    // Only the owner and admins may see who is waiting — the server 403s
+    // anyone else — so the list is fetched for them alone.
+    final me = ref.read(currentUserIdProvider);
+    final group = state.selectedGroup;
+    final canManage = group != null &&
+        group.id == groupId &&
+        (group.createdBy == me ||
+            state.groupMembers.any((m) => m.userId == me && m.isAdmin));
+    if (canManage) {
+      await loadJoinRequests(groupId);
+      await loadSentInvites(groupId);
+    }
+  }
+
+  Future<void> loadSentInvites(String groupId) async {
+    final result =
+        await ref.read(socialRepositoryProvider).getGroupInvites(groupId);
+    result.fold(
+      (f) => state = state.copyWith(error: f.message),
+      (invites) => state = state.copyWith(sentInvites: invites),
+    );
+  }
+
+  /// Invites someone by exactly one of [username], [email] or [userId].
+  ///
+  /// Returns what to tell the admin rather than setting [SocialState.error]:
+  /// "No SyncUp account with that email" is an answer to show in the sheet,
+  /// not a banner over the whole screen.
+  Future<({bool ok, String message})> inviteToGroup({
+    required String groupId,
+    String? username,
+    String? email,
+    String? userId,
+  }) async {
+    final result = await ref.read(socialRepositoryProvider).inviteToGroup(
+          groupId: groupId,
+          username: username,
+          email: email,
+          userId: userId,
+        );
+    final failure = result.getLeft().toNullable();
+    if (failure != null) return (ok: false, message: failure.message);
+
+    final joined = result.getOrElse((_) => 'invited') == 'member';
+    // Either the member list or the invited list changed.
+    await loadGroupDetail(groupId);
+    return (
+      ok: true,
+      message: joined
+          ? 'They had already asked to join, so they are in now'
+          : 'Invite sent',
+    );
+  }
+
+  Future<void> cancelInvite(String groupId, String inviteId) async {
+    state = state.copyWith(error: null);
+    final result = await ref
+        .read(socialRepositoryProvider)
+        .cancelInvite(groupId: groupId, inviteId: inviteId);
+    result.fold(
+      (f) => state = state.copyWith(error: f.message),
+      (_) => state = state.copyWith(
+        sentInvites: state.sentInvites.where((i) => i.id != inviteId).toList(),
+      ),
+    );
+  }
+
+  Future<void> loadMyInvites() async {
+    final result = await ref.read(socialRepositoryProvider).getMyInvites();
+    result.fold(
+      (f) => state = state.copyWith(error: f.message),
+      (invites) => state = state.copyWith(myInvites: invites),
+    );
+  }
+
+  /// Joins the group. Reloads the group list, where it now appears.
+  Future<bool> acceptInvite(String inviteId) async {
+    state = state.copyWith(error: null);
+    final result =
+        await ref.read(socialRepositoryProvider).acceptInvite(inviteId);
+    final failure = result.getLeft().toNullable();
+    if (failure != null) {
+      state = state.copyWith(error: failure.message);
+      return false;
+    }
+    state = state.copyWith(
+      myInvites: state.myInvites.where((i) => i.id != inviteId).toList(),
+    );
+    await loadGroups(ref.read(currentUserIdProvider));
+    return true;
+  }
+
+  Future<void> declineInvite(String inviteId) async {
+    state = state.copyWith(error: null);
+    final result =
+        await ref.read(socialRepositoryProvider).declineInvite(inviteId);
+    result.fold(
+      (f) => state = state.copyWith(error: f.message),
+      (_) => state = state.copyWith(
+        myInvites: state.myInvites.where((i) => i.id != inviteId).toList(),
+      ),
+    );
+  }
+
+  Future<void> loadJoinRequests(String groupId) async {
+    final result =
+        await ref.read(socialRepositoryProvider).getJoinRequests(groupId);
+    result.fold(
+      (f) => state = state.copyWith(error: f.message),
+      (requests) => state = state.copyWith(joinRequests: requests),
+    );
+  }
+
+  /// Lets a waiting user in. Reloads the group so the new member and the
+  /// header count both reflect what the server now holds.
+  Future<void> approveJoinRequest(String groupId, String requestId) async {
+    state = state.copyWith(error: null);
+    final result = await ref
+        .read(socialRepositoryProvider)
+        .approveJoinRequest(groupId: groupId, requestId: requestId);
+    await result.fold(
+      (f) async => state = state.copyWith(error: f.message),
+      (_) async => loadGroupDetail(groupId),
+    );
+  }
+
+  Future<void> rejectJoinRequest(String groupId, String requestId) async {
+    state = state.copyWith(error: null);
+    final result = await ref
+        .read(socialRepositoryProvider)
+        .rejectJoinRequest(groupId: groupId, requestId: requestId);
+    result.fold(
+      (f) => state = state.copyWith(error: f.message),
+      (_) => state = state.copyWith(
+        joinRequests:
+            state.joinRequests.where((r) => r.id != requestId).toList(),
+      ),
     );
   }
 

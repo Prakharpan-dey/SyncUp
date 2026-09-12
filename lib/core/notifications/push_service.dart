@@ -7,6 +7,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/auth/di/auth_providers.dart';
+import '../../features/social/presentation/viewmodels/social_viewmodel.dart';
+import '../auth/current_user.dart';
 import '../router/app_router.dart';
 import 'notification_service.dart';
 
@@ -194,9 +196,39 @@ class PushService {
     // Redirects handle the signed-out and unverified cases, stashing the
     // destination until the user is allowed to reach it.
     _ref.read(appRouterProvider).go(route);
+    _refreshFor(route);
+  }
+
+  /// Brings the screen a push is about up to date.
+  ///
+  /// Going to a route that is already on screen does not rebuild it, so a
+  /// friend request that arrived — or was tapped — while the Friends screen
+  /// was open used to leave it saying "no pending requests".
+  void _refreshFor(String? route) {
+    if (route == null) return;
+    final social = _ref.read(socialViewModelProvider.notifier);
+    if (route.startsWith('/feed/friends')) {
+      social.loadPendingRequests(_ref.read(currentUserIdProvider));
+      return;
+    }
+    if (route == '/feed/groups') {
+      // Where invites are listed — someone just invited you into a group.
+      social.loadMyInvites();
+      return;
+    }
+    const groupPrefix = '/feed/groups/';
+    if (route.startsWith(groupPrefix)) {
+      final groupId = route.substring(groupPrefix.length).split('/').first;
+      // Only the group already on screen: reloading another would swap what
+      // an open detail view is showing.
+      if (_ref.read(socialViewModelProvider).selectedGroup?.id == groupId) {
+        social.loadGroupDetail(groupId);
+      }
+    }
   }
 
   Future<void> _showForeground(RemoteMessage message) async {
+    _refreshFor(message.data['deep_link'] as String?);
     final notification = message.notification;
     if (notification == null) return;
 

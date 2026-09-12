@@ -78,8 +78,13 @@ class SocialRemoteDataSource {
     return _list(res.data);
   }
 
-  Future<void> joinGroup(String inviteToken, String userId) async {
-    await _dio.post('/groups/join/$inviteToken');
+  /// The API's answer: `{status: 'pending'}` now that joining waits for an
+  /// admin. An older server admitted immediately and sent no status.
+  Future<Map<String, dynamic>> joinGroup(
+      String inviteToken, String userId) async {
+    final res = await _dio.post('/groups/join/$inviteToken');
+    final data = res.data;
+    return data is Map ? Map<String, dynamic>.from(data) : const {};
   }
 
   Future<void> leaveGroup(String groupId, String userId) async {
@@ -93,5 +98,59 @@ class SocialRemoteDataSource {
   Future<Map<String, dynamic>> generateInviteLink(String groupId) async {
     final res = await _dio.post('/groups/$groupId/invite');
     return res.data as Map<String, dynamic>;
+  }
+
+  // Join requests — reviewed by the group's owner or admins.
+
+  Future<List<Map<String, dynamic>>> getJoinRequests(String groupId) async {
+    final res = await _dio.get('/groups/$groupId/requests');
+    return _list(res.data);
+  }
+
+  // An empty object rather than no body: Fastify rejects a JSON POST whose
+  // body is missing outright.
+  Future<void> approveJoinRequest(String groupId, String requestId) async {
+    await _dio.post('/groups/$groupId/requests/$requestId/approve',
+        data: const <String, dynamic>{});
+  }
+
+  Future<void> rejectJoinRequest(String groupId, String requestId) async {
+    await _dio.post('/groups/$groupId/requests/$requestId/reject',
+        data: const <String, dynamic>{});
+  }
+
+  // Invites — an owner or admin asks someone in; they accept or decline.
+
+  /// `{status: 'invited'}`, or `{status: 'member'}` when the person had already
+  /// asked to join and was let straight in.
+  Future<Map<String, dynamic>> inviteToGroup(
+      String groupId, Map<String, dynamic> target) async {
+    final res = await _dio.post('/groups/$groupId/invites', data: target);
+    final data = res.data;
+    return data is Map ? Map<String, dynamic>.from(data) : const {};
+  }
+
+  Future<List<Map<String, dynamic>>> getGroupInvites(String groupId) async {
+    final res = await _dio.get('/groups/$groupId/invites');
+    return _list(res.data);
+  }
+
+  Future<void> cancelInvite(String groupId, String inviteId) async {
+    await _dio.delete('/groups/$groupId/invites/$inviteId');
+  }
+
+  Future<List<Map<String, dynamic>>> getMyInvites() async {
+    final res = await _dio.get('/groups/invites');
+    return _list(res.data);
+  }
+
+  Future<void> acceptInvite(String inviteId) async {
+    await _dio.post('/groups/invites/$inviteId/accept',
+        data: const <String, dynamic>{});
+  }
+
+  Future<void> declineInvite(String inviteId) async {
+    await _dio.post('/groups/invites/$inviteId/decline',
+        data: const <String, dynamic>{});
   }
 }

@@ -6,7 +6,9 @@ import '../../../../core/auth/current_user.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/neo_brutalism.dart';
 import '../../../../core/widgets/user_avatar.dart';
+import '../../domain/entities/group_invite.dart';
 import '../viewmodels/social_viewmodel.dart';
+import '../widgets/add_members_sheet.dart';
 import '../../../../core/widgets/app_snack_bar.dart';
 
 class GroupDetailScreen extends ConsumerStatefulWidget {
@@ -81,6 +83,39 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
     );
   }
 
+  Future<void> _cancelInvite(SentGroupInvite invite) async {
+    final messenger = ScaffoldMessenger.of(context);
+    await ref
+        .read(socialViewModelProvider.notifier)
+        .cancelInvite(widget.groupId, invite.id);
+    if (!mounted) return;
+    final error = ref.read(socialViewModelProvider).error;
+    showAppSnackBarOn(messenger, error ?? 'Invite cancelled',
+        isError: error != null);
+  }
+
+  /// Approves or rejects one join request and says how it went.
+  Future<void> _answerRequest(
+    String requestId,
+    String displayName, {
+    required bool approve,
+  }) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final vm = ref.read(socialViewModelProvider.notifier);
+    if (approve) {
+      await vm.approveJoinRequest(widget.groupId, requestId);
+    } else {
+      await vm.rejectJoinRequest(widget.groupId, requestId);
+    }
+    if (!mounted) return;
+    final error = ref.read(socialViewModelProvider).error;
+    showAppSnackBarOn(
+      messenger,
+      error ?? (approve ? '$displayName joined the group' : 'Request declined'),
+      isError: error != null,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(socialViewModelProvider);
@@ -89,6 +124,9 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
     final currentUserId = ref.watch(currentUserIdProvider);
     // GroupDto maps the API's owner_id onto createdBy.
     final isOwner = group?.createdBy == currentUserId;
+    // Admins manage membership too; the server enforces the same rule.
+    final canManage = isOwner ||
+        state.groupMembers.any((m) => m.userId == currentUserId && m.isAdmin);
 
     if (state.isLoading && group == null) {
       return Scaffold(
@@ -118,7 +156,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                     children: [
                       Icon(Icons.link_rounded, size: 20),
                       SizedBox(width: 8),
-                      Text('COPY INVITE LINK'),
+                      Text('COPY INVITE CODE'),
                     ],
                   ),
                 ),
@@ -139,7 +177,8 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
               if (value == 'copy_invite' && group.inviteToken != null) {
                 Clipboard.setData(
                     ClipboardData(text: group.inviteToken!));
-                showAppSnackBar(context, 'Invite link copied!');
+                showAppSnackBar(context,
+                    'Invite code copied — they enter it under Groups → Join with code');
               } else if (value == 'leave') {
                 _confirmLeave();
               }
@@ -183,6 +222,162 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
             ),
           ),
           const SizedBox(height: 24),
+
+          if (canManage) ...[
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => showAddMembersSheet(context, widget.groupId),
+                icon: const Icon(Icons.person_add_alt_1_rounded),
+                label: const Text('ADD MEMBERS'),
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
+
+          // Invites sent but not yet answered — admins only, like join
+          // requests, so for everyone else this is empty.
+          if (state.sentInvites.isNotEmpty) ...[
+            Text(
+              'INVITED (${state.sentInvites.length})',
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            ...state.sentInvites.map((invite) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 12),
+                  decoration: NeoBrutalism.flatCardDecoration(isDark: isDark),
+                  child: Row(
+                    children: [
+                      UserAvatar(
+                        seed: invite.user.id,
+                        displayName: invite.user.displayName,
+                        size: 36,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              invite.user.displayName,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(fontWeight: FontWeight.w500),
+                            ),
+                            Text(
+                              '@${invite.user.username} · waiting to accept',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: isDark
+                                        ? AppColors.textSecondaryDark
+                                        : AppColors.textSecondary,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 22),
+                        color: AppColors.error,
+                        tooltip: 'Cancel invite',
+                        onPressed: () => _cancelInvite(invite),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+            const SizedBox(height: 24),
+          ],
+
+          // Filled only for the owner and admins — nobody else is sent the
+          // list — so for everyone else this section simply is not there.
+          if (state.joinRequests.isNotEmpty) ...[
+            Text(
+              'JOIN REQUESTS (${state.joinRequests.length})',
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            ...state.joinRequests.map((request) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 12),
+                  decoration: NeoBrutalism.flatCardDecoration(isDark: isDark),
+                  child: Row(
+                    children: [
+                      UserAvatar(
+                        seed: request.user.id,
+                        displayName: request.user.displayName,
+                        size: 36,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              request.user.displayName,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(fontWeight: FontWeight.w500),
+                            ),
+                            Text(
+                              '@${request.user.username}',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: isDark
+                                        ? AppColors.textSecondaryDark
+                                        : AppColors.textSecondary,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.check_rounded, size: 22),
+                        color: AppColors.success,
+                        tooltip: 'Approve',
+                        onPressed: () => _answerRequest(
+                          request.id,
+                          request.user.displayName,
+                          approve: true,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 22),
+                        color: AppColors.error,
+                        tooltip: 'Reject',
+                        onPressed: () => _answerRequest(
+                          request.id,
+                          request.user.displayName,
+                          approve: false,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+            const SizedBox(height: 24),
+          ],
 
           Row(
             children: [

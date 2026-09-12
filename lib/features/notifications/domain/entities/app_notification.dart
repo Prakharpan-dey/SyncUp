@@ -12,6 +12,12 @@ enum NotificationType {
   friendRequest,
   reaction,
   comment,
+
+  /// Someone asked to join a group you run, or your own request was approved.
+  groupRequest,
+
+  /// Someone invited you into a group, or accepted an invite you sent.
+  groupInvite,
 }
 
 class AppNotification extends Equatable {

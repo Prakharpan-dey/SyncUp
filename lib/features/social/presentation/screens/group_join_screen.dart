@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../notifications/di/notification_providers.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/auth/current_user.dart';
@@ -19,6 +20,9 @@ class _GroupJoinScreenState extends ConsumerState<GroupJoinScreen> {
   bool _loading = true;
   String? _error;
 
+  /// True once the join is waiting for an admin rather than done.
+  bool _pending = false;
+
   @override
   void initState() {
     super.initState();
@@ -35,10 +39,17 @@ class _GroupJoinScreenState extends ConsumerState<GroupJoinScreen> {
         _loading = false;
         _error = failure.message;
       }),
-      (_) => setState(() {
+      (pending) => setState(() {
         _loading = false;
+        _pending = pending;
       }),
     );
+    // Waiting on an admin is exactly when a push saying "you're in" helps.
+    if (_pending && mounted) {
+      await ref
+          .read(notificationPermissionHandlerProvider)
+          .onFirstMeaningfulAction(context);
+    }
   }
 
   @override
@@ -67,14 +78,20 @@ class _GroupJoinScreenState extends ConsumerState<GroupJoinScreen> {
                         child: Icon(
                           _error != null
                               ? Icons.error_outline_rounded
-                              : Icons.check_rounded,
+                              : _pending
+                                  ? Icons.hourglass_top_rounded
+                                  : Icons.check_rounded,
                           size: 40,
                           color: Colors.black,
                         ),
                       ),
                       const SizedBox(height: 24),
                       Text(
-                        _error != null ? 'COULD NOT JOIN' : 'JOINED!',
+                        _error != null
+                            ? 'COULD NOT JOIN'
+                            : _pending
+                                ? 'REQUEST SENT'
+                                : 'JOINED!',
                         style: GoogleFonts.bigShoulders(
                           fontSize: 32,
                           fontWeight: FontWeight.w900,
@@ -82,7 +99,11 @@ class _GroupJoinScreenState extends ConsumerState<GroupJoinScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        _error ?? 'You have joined the group.',
+                        _error ??
+                            (_pending
+                                ? "The group's admin will review your request. "
+                                    "You'll get a notification when you're in."
+                                : 'You have joined the group.'),
                         textAlign: TextAlign.center,
                         style: GoogleFonts.archivo(
                           fontSize: 14,
@@ -96,7 +117,9 @@ class _GroupJoinScreenState extends ConsumerState<GroupJoinScreen> {
                         onTap: () => context.go('/feed/groups'),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 24, vertical: 14),
+                            horizontal: 24,
+                            vertical: 14,
+                          ),
                           decoration: NeoBrutalism.cardDecoration(
                             color: AppColors.primary,
                             isDark: isDark,
