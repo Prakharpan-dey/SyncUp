@@ -42,6 +42,28 @@ class TaskListState {
   int get dueTodayCount =>
       tasks.where((t) => t.dueDate != null && DateHelpers.isToday(t.dueDate!)).length;
 
+  /// What "today's plan" means: the rows Home shows under today — every
+  /// unfinished task that is undated or due by tonight (overdue ones
+  /// included), plus whatever was finished today.
+  ///
+  /// Sharing used to count only tasks dated today, so someone whose tasks had
+  /// no due date saw a full Home list and no share button at all.
+  List<Task> get todaysPlan {
+    final now = DateTime.now();
+    final endOfToday = DateTime(now.year, now.month, now.day, 23, 59, 59);
+    return tasks.where((t) {
+      if (t.isCompleted) {
+        return t.completedAt != null && DateHelpers.isToday(t.completedAt!);
+      }
+      return t.dueAt == null || !t.dueAt!.isAfter(endOfToday);
+    }).toList();
+  }
+
+  /// Today's plan as friends may see it: private tasks left out, since
+  /// "Keep this task private" promises friends will not see that task.
+  List<Task> get shareablePlan =>
+      todaysPlan.where((t) => !t.isPrivate).toList();
+
   /// The pending tasks worth drawing, with each repeating series collapsed to
   /// the one occurrence it is next due on.
   ///

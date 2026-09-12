@@ -45,16 +45,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   /// Today's tasks, done and not, in the order they are shown.
-  List<Task> _todaysTasks(TaskListState state) => state.tasks
-      .where((t) => t.dueDate != null && DateHelpers.isToday(t.dueDate!))
-      .toList()
-    ..sort(_byDueThenCreated);
+  /// Private tasks are left out: a shared plan is something friends see.
+  List<Task> _todaysTasks(TaskListState state) =>
+      state.shareablePlan..sort(_byDueThenCreated);
 
   /// Whether the share action is offered at all.
   ///
   /// Hidden when the user has set sharing to "nothing" — someone who chose to
   /// share nothing should not be offered the action, and the server rejects it
-  /// anyway — and when there is nothing due today to share.
+  /// anyway — and when today's list is empty.
   bool _canSharePlan(TaskListState state) {
     final sharing = ref.read(authViewModelProvider).user?.privacySharingDefault;
     if (sharing == null || sharing == 'none') return false;
@@ -331,7 +330,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       ),
                                     ),
                                     TextSpan(
-                                      text: '/${taskState.dueTodayCount}',
+                                      text: '/${taskState.todaysPlan.length}',
                                       style: GoogleFonts.bigShoulders(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w900,
