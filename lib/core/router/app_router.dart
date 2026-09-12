@@ -232,12 +232,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   onTap: (index) {
                     // The Feed tab stays alive between visits and loaded
                     // only once, so a friend's post from since then never
-                    // showed. Opening the tab now fetches it fresh.
+                    // showed. Opening the tab fetches it again — unless it
+                    // loaded in the last 30 seconds.
                     if (index == 3 && !isGuest) {
-                      final feed = ref.read(feedViewModelProvider);
-                      ref
-                          .read(feedViewModelProvider.notifier)
-                          .loadFeed(tab: feed.currentTab);
+                      ref.read(feedViewModelProvider.notifier).refreshIfStale();
                     }
                     navigationShell.goBranch(index);
                   },

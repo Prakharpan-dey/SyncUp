@@ -209,4 +209,74 @@ void main() {
       expect(state().isLoading, isFalse);
     });
   });
+
+  group('refreshIfStale', () {
+    /// Opening the Feed tab used to refetch on every tap. It now skips a
+    /// reload for 30 seconds after one — but never when nothing has loaded
+    /// yet or the last attempt failed.
+    void verifyFetched(int times) => verify(() => repo.getFeed(
+          tab: any(named: 'tab'),
+          cursor: any(named: 'cursor'),
+          limit: any(named: 'limit'),
+        )).called(times);
+
+    test('loads when nothing has loaded yet', () async {
+      stubFeed([item()]);
+      await vm().refreshIfStale();
+      verifyFetched(1);
+    });
+
+    test('skips a reload within 30 seconds of the last one', () async {
+      stubFeed([item()]);
+      await vm().loadFeed();
+      clearInteractions(repo);
+
+      await vm().refreshIfStale(
+          now: () => DateTime.now().add(const Duration(seconds: 10)));
+      verifyNever(() => repo.getFeed(
+            tab: any(named: 'tab'),
+            cursor: any(named: 'cursor'),
+            limit: any(named: 'limit'),
+          ));
+    });
+
+    test('reloads once 30 seconds have passed', () async {
+      stubFeed([item()]);
+      await vm().loadFeed();
+      clearInteractions(repo);
+
+      await vm().refreshIfStale(
+          now: () => DateTime.now().add(const Duration(seconds: 31)));
+      verifyFetched(1);
+    });
+
+    test('keeps the tab it is on', () async {
+      stubFeed([item()]);
+      await vm().loadFeed(tab: 'groups');
+      clearInteractions(repo);
+
+      await vm().refreshIfStale(
+          now: () => DateTime.now().add(const Duration(minutes: 1)));
+      verify(() => repo.getFeed(
+            tab: 'groups',
+            cursor: any(named: 'cursor'),
+            limit: any(named: 'limit'),
+          )).called(1);
+    });
+
+    test('retries straight away after a failed load', () async {
+      when(() => repo.getFeed(
+            tab: any(named: 'tab'),
+            cursor: any(named: 'cursor'),
+            limit: any(named: 'limit'),
+          )).thenAnswer((_) async =>
+              const Left(NetworkFailure('Connect to the internet to view your feed')));
+      await vm().loadFeed();
+      clearInteractions(repo);
+
+      await vm().refreshIfStale(
+          now: () => DateTime.now().add(const Duration(seconds: 1)));
+      verifyFetched(1);
+    });
+  });
 }

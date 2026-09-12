@@ -11,6 +11,9 @@ class FeedState {
   final bool isLoadingMore;
   final String? error;
 
+  /// When the first page last arrived, for [FeedViewModel.refreshIfStale].
+  final DateTime? loadedAt;
+
   const FeedState({
     this.items = const [],
     this.currentTab = 'friends',
@@ -19,6 +22,7 @@ class FeedState {
     this.isLoading = false,
     this.isLoadingMore = false,
     this.error,
+    this.loadedAt,
   });
 
   FeedState copyWith({
@@ -29,6 +33,7 @@ class FeedState {
     bool? isLoading,
     bool? isLoadingMore,
     String? error,
+    DateTime? loadedAt,
   }) =>
       FeedState(
         items: items ?? this.items,
@@ -38,6 +43,7 @@ class FeedState {
         isLoading: isLoading ?? this.isLoading,
         isLoadingMore: isLoadingMore ?? this.isLoadingMore,
         error: error,
+        loadedAt: loadedAt ?? this.loadedAt,
       );
 }
 
@@ -57,8 +63,26 @@ class FeedViewModel extends Notifier<FeedState> {
         items: data.items,
         cursor: data.nextCursor,
         hasMore: data.nextCursor != null,
+        loadedAt: DateTime.now(),
       ),
     );
+  }
+
+  /// How long a loaded feed counts as fresh when the Feed tab is reopened.
+  static const freshFor = Duration(seconds: 30);
+
+  /// Reloads unless the first page arrived within [freshFor].
+  ///
+  /// Opening the Feed tab used to refetch every time, so someone flicking
+  /// between tabs cost a request per tap. Pull-to-refresh still always
+  /// reloads, and a feed that failed or never loaded is always refetched.
+  Future<void> refreshIfStale({DateTime Function() now = DateTime.now}) async {
+    final loadedAt = state.loadedAt;
+    final fresh = loadedAt != null &&
+        state.error == null &&
+        now().difference(loadedAt) < freshFor;
+    if (fresh) return;
+    await loadFeed(tab: state.currentTab);
   }
 
   /// Load next page (infinite scroll).
