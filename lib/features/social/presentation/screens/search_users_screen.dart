@@ -4,6 +4,9 @@ import '../../../../core/auth/current_user.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/neo_brutalism.dart';
 import '../viewmodels/social_viewmodel.dart';
+import '../../domain/entities/user_summary.dart';
+import '../../../notifications/di/notification_providers.dart';
+import '../../../../core/widgets/app_snack_bar.dart';
 import '../widgets/user_search_card.dart';
 
 class SearchUsersScreen extends ConsumerStatefulWidget {
@@ -24,6 +27,10 @@ class _SearchUsersScreenState extends ConsumerState<SearchUsersScreen> {
   /// the user asks for it.
   bool _searched = false;
 
+  /// Username a request was just sent to, so the now-empty results say so
+  /// instead of claiming no one has that username.
+  String? _requestedName;
+
   @override
   void dispose() {
     _searchCtrl.dispose();
@@ -36,15 +43,38 @@ class _SearchUsersScreenState extends ConsumerState<SearchUsersScreen> {
     if (_searched) {
       ref.read(socialViewModelProvider.notifier).clearSearch();
     }
-    setState(() => _searched = false);
+    setState(() {
+      _searched = false;
+      _requestedName = null;
+    });
   }
 
   void _submit() {
     final handle = _searchCtrl.text.trim();
     if (handle.isEmpty) return;
     FocusScope.of(context).unfocus();
-    setState(() => _searched = true);
+    setState(() {
+      _searched = true;
+      _requestedName = null;
+    });
     ref.read(socialViewModelProvider.notifier).searchUsers(handle);
+  }
+
+  Future<void> _addFriend(UserSummary user) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final sent =
+        await ref.read(socialViewModelProvider.notifier).sendFriendRequest(
+              requesterId: ref.read(currentUserIdProvider),
+              receiverId: user.id,
+            );
+    if (!mounted || !sent) return;
+    setState(() => _requestedName = user.username);
+    showAppSnackBarOn(messenger, 'Friend request sent to @${user.username}');
+    // A friend request is when pushes start to matter, so it is one of the
+    // moments notifications are offered.
+    await ref
+        .read(notificationPermissionHandlerProvider)
+        .onFirstMeaningfulAction(context);
   }
 
   @override
@@ -72,7 +102,8 @@ class _SearchUsersScreenState extends ConsumerState<SearchUsersScreen> {
               onChanged: _onChanged,
               onSubmitted: (_) => _submit(),
               decoration: InputDecoration(
-                hintText: 'Enter exact username',
+                // Matched exactly, capitals included — like the server.
+                hintText: 'Exact username (capitals matter)',
                 prefixIcon: const Icon(Icons.search_rounded),
                 suffixIcon: _searchCtrl.text.isNotEmpty
                     ? IconButton(
@@ -146,15 +177,7 @@ class _SearchUsersScreenState extends ConsumerState<SearchUsersScreen> {
                           final user = state.searchResults[index];
                           return UserSearchCard(
                             user: user,
-                            onAddFriend: () {
-                              ref
-                                  .read(socialViewModelProvider.notifier)
-                                  .sendFriendRequest(
-                                    requesterId:
-                                        ref.read(currentUserIdProvider),
-                                    receiverId: user.id,
-                                  );
-                            },
+                            onAddFriend: () => _addFriend(user),
                           );
                         },
                       ),
@@ -166,6 +189,7 @@ class _SearchUsersScreenState extends ConsumerState<SearchUsersScreen> {
 
   Widget _buildEmptyState(BuildContext context, bool isDark) {
     final hasSearched = _searched;
+    final sentTo = _requestedName;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -180,9 +204,11 @@ class _SearchUsersScreenState extends ConsumerState<SearchUsersScreen> {
                 isDark: isDark,
               ),
               child: Icon(
-                hasSearched
-                    ? Icons.person_search_rounded
-                    : Icons.search_rounded,
+                sentTo != null
+                    ? Icons.mark_email_read_rounded
+                    : hasSearched
+                        ? Icons.person_search_rounded
+                        : Icons.search_rounded,
                 size: 36,
                 color: isDark
                     ? AppColors.textSecondaryDark
@@ -191,9 +217,11 @@ class _SearchUsersScreenState extends ConsumerState<SearchUsersScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              hasSearched
-                  ? 'NO MATCH'
-                  : 'ADD A FRIEND',
+              sentTo != null
+                  ? 'REQUEST SENT'
+                  : hasSearched
+                      ? 'NO MATCH'
+                      : 'ADD A FRIEND',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w900,
@@ -202,7 +230,9 @@ class _SearchUsersScreenState extends ConsumerState<SearchUsersScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              hasSearched
+              sentTo != null
+                  ? '@$sentTo will see it in their friend requests.'
+                  : hasSearched
                   ? 'No one has that username.\nCheck the spelling and try again.'
                   : 'Enter a friend’s exact username.\nUsernames are unique.',
               textAlign: TextAlign.center,

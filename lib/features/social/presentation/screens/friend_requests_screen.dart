@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/neo_brutalism.dart';
 import '../../../../core/widgets/user_avatar.dart';
 import '../../domain/entities/friendship.dart';
+import '../../../notifications/di/notification_providers.dart';
 import '../viewmodels/social_viewmodel.dart';
 
 class FriendRequestsScreen extends ConsumerStatefulWidget {
@@ -16,24 +17,68 @@ class FriendRequestsScreen extends ConsumerStatefulWidget {
 }
 
 class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late TabController _tabCtrl;
 
   @override
   void initState() {
     super.initState();
     _tabCtrl = TabController(length: 2, vsync: this);
+    WidgetsBinding.instance.addObserver(this);
     Future.microtask(() {
       if (!mounted) return;
-      final vm = ref.read(socialViewModelProvider.notifier);
-      final userId = ref.read(currentUserIdProvider);
-      vm.loadPendingRequests(userId);
-      vm.loadFriends(userId);
+      _reload();
     });
   }
 
+  /// Reloads both lists. Runs on open, on pull-to-refresh, and when the app
+  /// comes back to the foreground: a request that arrived while this screen
+  /// sat open used to stay invisible until the screen was rebuilt.
+  Future<void> _reload() async {
+    final vm = ref.read(socialViewModelProvider.notifier);
+    final userId = ref.read(currentUserIdProvider);
+    await Future.wait([
+      vm.loadPendingRequests(userId),
+      vm.loadFriends(userId),
+    ]);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) _reload();
+  }
+
+  /// Accepting is when a friend's activity — and pushes about it — start to
+  /// matter, so it is one of the moments notifications are offered.
+  Future<void> _accept(String requestId) async {
+    await ref.read(socialViewModelProvider.notifier).respondToRequest(
+          requestId: requestId,
+          response: FriendshipStatus.accepted,
+        );
+    if (!mounted) return;
+    await ref
+        .read(notificationPermissionHandlerProvider)
+        .onFirstMeaningfulAction(context);
+  }
+
+  /// Pull-to-refresh for one tab. The loading and empty states do not scroll
+  /// on their own, so they sit in a view that always does — otherwise
+  /// "NO PENDING REQUESTS" could never be pulled to check again.
+  Widget _refreshable(Widget child) => RefreshIndicator(
+        onRefresh: _reload,
+        child: child is ScrollView
+            ? child
+            : LayoutBuilder(
+                builder: (context, constraints) => SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: SizedBox(height: constraints.maxHeight, child: child),
+                ),
+              ),
+      );
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _tabCtrl.dispose();
     super.dispose();
   }
@@ -64,7 +109,7 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen>
         controller: _tabCtrl,
         children: [
           // Pending Requests tab
-          state.isLoading && state.pendingRequests.isEmpty
+          _refreshable(state.isLoading && state.pendingRequests.isEmpty
               ? const Center(child: CircularProgressIndicator())
               : state.pendingRequests.isEmpty
                   ? _buildEmptyState(
@@ -83,12 +128,7 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen>
                         final request = state.pendingRequests[index];
                         return _RequestCard(
                           request: request,
-                          onAccept: () => ref
-                              .read(socialViewModelProvider.notifier)
-                              .respondToRequest(
-                                requestId: request.id,
-                                response: FriendshipStatus.accepted,
-                              ),
+                          onAccept: () => _accept(request.id),
                           onReject: () => ref
                               .read(socialViewModelProvider.notifier)
                               .respondToRequest(
@@ -97,10 +137,10 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen>
                               ),
                         );
                       },
-                    ),
+                    )),
 
           // Friends tab
-          state.isLoading && state.friends.isEmpty
+          _refreshable(state.isLoading && state.friends.isEmpty
               ? const Center(child: CircularProgressIndicator())
               : state.friends.isEmpty
                   ? _buildEmptyState(
@@ -160,7 +200,7 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen>
                           ),
                         );
                       },
-                    ),
+                    )),
         ],
       ),
     );

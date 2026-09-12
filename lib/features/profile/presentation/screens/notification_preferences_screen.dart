@@ -11,6 +11,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/neo_brutalism.dart';
 import '../../../../core/widgets/app_snack_bar.dart';
 import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../../../notifications/di/notification_providers.dart';
 import '../../../tasks/di/task_providers.dart';
 import '../../../tasks/presentation/viewmodels/task_viewmodel.dart';
 
@@ -57,6 +58,16 @@ class _NotificationPreferencesScreenState
     unawaited(_readPermission());
   }
 
+  /// Asks the OS and, if allowed, registers for push. Without this, anyone who
+  /// tapped "Not Now" once — or never completed a task — had no way to turn
+  /// pushes on, and the server had no device to send them to.
+  Future<void> _turnOnNotifications() async {
+    await ref
+        .read(notificationPermissionHandlerProvider)
+        .requestPermissionManually();
+    await _readPermission();
+  }
+
   Future<void> _readPermission() async {
     final status = await ref.read(pushServiceProvider).permissionStatus();
     if (mounted) setState(() => _permission = status);
@@ -80,8 +91,10 @@ class _NotificationPreferencesScreenState
             const SizedBox(height: 16),
           ] else if (_permission == AuthorizationStatus.notDetermined) ...[
             _PermissionNotice(
-              text: 'SyncUp has not asked for notification permission yet. '
-                  'It will the first time you complete a task.',
+              text: 'Push notifications are off, so reminders, friend '
+                  'requests and group requests only show up inside the app.',
+              actionLabel: 'TURN ON',
+              onAction: _turnOnNotifications,
             ),
             const SizedBox(height: 16),
           ],
@@ -212,8 +225,10 @@ class _NotificationPreferencesScreenState
 /// which reads as the preferences not working.
 class _PermissionNotice extends StatelessWidget {
   final String text;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
-  const _PermissionNotice({required this.text});
+  const _PermissionNotice({required this.text, this.actionLabel, this.onAction});
 
   @override
   Widget build(BuildContext context) {
@@ -239,6 +254,15 @@ class _PermissionNotice extends StatelessWidget {
                   ),
             ),
           ),
+          if (actionLabel != null)
+            TextButton(
+              onPressed: onAction,
+              style: TextButton.styleFrom(foregroundColor: Colors.black),
+              child: Text(
+                actionLabel!,
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+            ),
         ],
       ),
     );

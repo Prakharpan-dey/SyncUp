@@ -1,14 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Status bar icon for pushes. Android draws small icons as a silhouette:
-     anything non-transparent becomes solid white, so this is a single flat
-     shape. Without it FCM falls back to the launcher icon, which silhouettes
-     into a featureless white square. -->
+<!-- Status bar icon for pushes: a plain "S" for SyncUp. Android draws small
+     icons as a silhouette (anything non-transparent turns solid white), so
+     this is one flat stroke. It replaced a checkmark, which made every push
+     read as "task completed" whatever it was about — a friend request
+     included. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
     <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M9,16.17L4.83,12l-1.42,1.41L9,19 21,7l-1.41,-1.41z"/>
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M17,7.2C16.3,5.5 14.5,4.5 12,4.5C9,4.5 7,6 7,8.1C7,10.6 9.6,11.3 12,11.9C14.6,12.5 17,13.3 17,15.9C17,18.1 15,19.5 12,19.5C9.4,19.5 7.6,18.4 7,16.7"/>
 </vector>
