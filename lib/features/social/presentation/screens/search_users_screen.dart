@@ -103,7 +103,7 @@ class _SearchUsersScreenState extends ConsumerState<SearchUsersScreen> {
               onSubmitted: (_) => _submit(),
               decoration: InputDecoration(
                 // Matched exactly, capitals included — like the server.
-                hintText: 'Exact username (capitals matter)',
+                hintText: 'Exact username',
                 prefixIcon: const Icon(Icons.search_rounded),
                 suffixIcon: _searchCtrl.text.isNotEmpty
                     ? IconButton(
