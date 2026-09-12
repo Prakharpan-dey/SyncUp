@@ -7,6 +7,7 @@ import '../../../../core/auth/current_user.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/neo_brutalism.dart';
 import '../../di/social_providers.dart';
+import '../viewmodels/social_viewmodel.dart';
 
 class GroupJoinScreen extends ConsumerStatefulWidget {
   final String token;
@@ -114,7 +115,14 @@ class _GroupJoinScreenState extends ConsumerState<GroupJoinScreen> {
                       ),
                       const SizedBox(height: 32),
                       GestureDetector(
-                        onTap: () => context.go('/feed/groups'),
+                        onTap: () {
+                          // The list may still be the one open from before the
+                          // join; going back to it does not reload it.
+                          ref
+                              .read(socialViewModelProvider.notifier)
+                              .loadGroups(ref.read(currentUserIdProvider));
+                          context.go('/feed/groups');
+                        },
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 24,

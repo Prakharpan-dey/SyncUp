@@ -218,6 +218,9 @@ class PushService {
     }
     const groupPrefix = '/feed/groups/';
     if (route.startsWith(groupPrefix)) {
+      // Someone joined, or you were let in: the list's member counts and
+      // the groups in it may both have changed.
+      social.loadGroups(_ref.read(currentUserIdProvider));
       final groupId = route.substring(groupPrefix.length).split('/').first;
       // Only the group already on screen: reloading another would swap what
       // an open detail view is showing.
