@@ -125,12 +125,34 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
             child: state.isLoading && state.items.isEmpty
                 ? const Center(child: CircularProgressIndicator())
                 : state.items.isEmpty
-                    ? _buildEmptyState(context, isDark, state.currentTab)
+                    // Pullable too. It used to be a plain Column, so a feed
+                    // that opened empty could never be refreshed and a
+                    // friend's new post stayed out of sight.
+                    ? RefreshIndicator(
+                        onRefresh: () =>
+                            vm.loadFeed(tab: state.currentTab),
+                        child: LayoutBuilder(
+                          builder: (context, constraints) =>
+                              SingleChildScrollView(
+                            physics:
+                                const AlwaysScrollableScrollPhysics(),
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                  minHeight: constraints.maxHeight),
+                              child: _buildEmptyState(
+                                  context, isDark, state.currentTab),
+                            ),
+                          ),
+                        ),
+                      )
                     : RefreshIndicator(
                         onRefresh: () =>
                             vm.loadFeed(tab: state.currentTab),
                         child: ListView.separated(
                           controller: _scrollController,
+                          // A couple of cards do not fill the screen, and a
+                          // list that cannot scroll cannot be pulled either.
+                          physics: const AlwaysScrollableScrollPhysics(),
                           padding:
                               const EdgeInsets.fromLTRB(16, 12, 16, 100),
                           itemCount: state.items.length +

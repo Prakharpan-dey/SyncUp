@@ -18,6 +18,7 @@ import '../../features/attendance/presentation/screens/subject_list_screen.dart'
 import '../../features/attendance/presentation/screens/subject_detail_screen.dart';
 import '../../features/attendance/presentation/screens/subject_create_screen.dart';
 import '../../features/feed/presentation/screens/feed_screen.dart';
+import '../../features/feed/presentation/viewmodels/feed_viewmodel.dart';
 import '../../features/social/presentation/screens/search_users_screen.dart';
 import '../../features/social/presentation/screens/friend_requests_screen.dart';
 import '../../features/social/presentation/screens/group_list_screen.dart';
@@ -228,7 +229,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 final isGuest = ref.watch(authViewModelProvider).isGuest;
                 return _NeoNavBar(
                   currentIndex: navigationShell.currentIndex,
-                  onTap: navigationShell.goBranch,
+                  onTap: (index) {
+                    // The Feed tab stays alive between visits and loaded
+                    // only once, so a friend's post from since then never
+                    // showed. Opening the tab now fetches it fresh.
+                    if (index == 3 && !isGuest) {
+                      final feed = ref.read(feedViewModelProvider);
+                      ref
+                          .read(feedViewModelProvider.notifier)
+                          .loadFeed(tab: feed.currentTab);
+                    }
+                    navigationShell.goBranch(index);
+                  },
                   // FEED is branch 3 and needs an account.
                   lockedIndices: isGuest ? const {3} : const {},
                 );
