@@ -34,6 +34,10 @@ class _EmailVerificationScreenState
   @override
   void initState() {
     super.initState();
+    // Shared auth state: an error left by another auth screen is not ours.
+    Future.microtask(() {
+      if (mounted) ref.read(authViewModelProvider.notifier).clearErrors();
+    });
     if (widget.token != null) {
       Future.microtask(() => _confirm(widget.token!));
     }

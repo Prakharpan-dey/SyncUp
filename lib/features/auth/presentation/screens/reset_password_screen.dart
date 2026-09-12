@@ -31,6 +31,16 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   bool _saving = false;
 
   @override
+  void initState() {
+    super.initState();
+    // The auth state is shared by every auth screen. An error from the one
+    // before (a wrong password on sign-in) is not about this screen.
+    Future.microtask(() {
+      if (mounted) ref.read(authViewModelProvider.notifier).clearErrors();
+    });
+  }
+
+  @override
   void dispose() {
     _passwordCtrl.dispose();
     _confirmCtrl.dispose();

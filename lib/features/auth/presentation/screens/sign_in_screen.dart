@@ -19,6 +19,16 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   final _passwordCtrl = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    // The auth state is shared by every auth screen. An error from the one
+    // before (a wrong password on sign-in) is not about this screen.
+    Future.microtask(() {
+      if (mounted) ref.read(authViewModelProvider.notifier).clearErrors();
+    });
+  }
+
+  @override
   void dispose() {
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
