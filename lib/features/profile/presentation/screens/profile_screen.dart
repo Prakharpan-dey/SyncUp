@@ -69,7 +69,9 @@ class ProfileScreen extends ConsumerWidget {
                                       : AppColors.textSecondary,
                                 ),
                       ),
-                      if (user?.college != null) ...[
+                      // Clearing the field saves an empty string, not null,
+                      // which drew a blank line under the name.
+                      if (user?.college?.trim().isNotEmpty ?? false) ...[
                         const SizedBox(height: 2),
                         Text(
                           user!.college!,
