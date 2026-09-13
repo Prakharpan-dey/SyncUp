@@ -53,9 +53,25 @@ class _NotificationCentreScreenState
       ),
       body: state.isLoading && state.notifications.isEmpty
           ? const Center(child: CircularProgressIndicator())
-          : state.notifications.isEmpty
-              ? _buildEmptyState(context, isDark)
+          // Pullable either way. The empty page was a plain Column, so it
+          // could not be refreshed at all.
+          : RefreshIndicator(
+              onRefresh: () => ref
+                  .read(notificationViewModelProvider.notifier)
+                  .loadNotifications(),
+              child: state.notifications.isEmpty
+              ? LayoutBuilder(
+                  builder: (context, constraints) => SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: ConstrainedBox(
+                      constraints:
+                          BoxConstraints(minHeight: constraints.maxHeight),
+                      child: _buildEmptyState(context, isDark),
+                    ),
+                  ),
+                )
               : ListView.separated(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.all(16),
                   itemCount: state.notifications.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 8),
@@ -81,6 +97,7 @@ class _NotificationCentreScreenState
                     );
                   },
                 ),
+            ),
     );
   }
 

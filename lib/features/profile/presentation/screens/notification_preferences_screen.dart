@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/di/core_providers.dart';
 import '../../../../core/notifications/push_service.dart';
+import '../../../../core/notifications/system_settings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/neo_brutalism.dart';
 import '../../../../core/widgets/app_snack_bar.dart';
@@ -24,7 +25,8 @@ class NotificationPreferencesScreen extends ConsumerStatefulWidget {
 }
 
 class _NotificationPreferencesScreenState
-    extends ConsumerState<NotificationPreferencesScreen> {
+    extends ConsumerState<NotificationPreferencesScreen>
+    with WidgetsBindingObserver {
   /// Keys as stored in `users.notification_settings`.
   static const _kTaskReminders = 'task_reminders';
   static const _kAttendanceWarnings = 'attendance_warnings';
@@ -43,6 +45,9 @@ class _NotificationPreferencesScreenState
   @override
   void initState() {
     super.initState();
+    // Coming back from the system Settings app may have changed the
+    // permission; re-read it so the notice above the switches is current.
+    WidgetsBinding.instance.addObserver(this);
 
     // Seeded from the account rather than hardcoded to on, so the screen shows
     // what is actually saved. An absent key means enabled — see
@@ -58,13 +63,27 @@ class _NotificationPreferencesScreenState
     unawaited(_readPermission());
   }
 
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) unawaited(_readPermission());
+  }
+
   /// Asks the OS and, if allowed, registers for push. Without this, anyone who
   /// tapped "Not Now" once — or never completed a task — had no way to turn
   /// pushes on, and the server had no device to send them to.
   Future<void> _turnOnNotifications() async {
-    await ref
+    final granted = await ref
         .read(notificationPermissionHandlerProvider)
         .requestPermissionManually();
+    // After a "Don't allow", Android returns at once without asking, and
+    // TURN ON appeared to do nothing. Open the switch that still works.
+    if (!granted) await openNotificationSettings();
     await _readPermission();
   }
 
@@ -87,6 +106,9 @@ class _NotificationPreferencesScreenState
               text: 'Notifications are turned off for SyncUp in your device '
                   'settings. These preferences will take effect once you turn '
                   'them back on.',
+              // This state had no button at all: a dead end.
+              actionLabel: 'OPEN SETTINGS',
+              onAction: openNotificationSettings,
             ),
             const SizedBox(height: 16),
           ] else if (_permission == AuthorizationStatus.notDetermined) ...[
