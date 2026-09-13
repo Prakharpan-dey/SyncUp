@@ -245,6 +245,22 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Either<Failure, User>> changeEmail({
+    required String newEmail,
+    required String password,
+  }) async {
+    try {
+      final data = await _remote.changeEmail(newEmail: newEmail, password: password);
+      final json = data['user'] as Map<String, dynamic>? ?? data;
+      return Right(UserDto.fromJson(json).toDomain());
+    } on DioException catch (e) {
+      return Left(ErrorMapper.fromDioException(e));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, User>> updateProfile(Map<String, dynamic> fields) async {
     try {
       final data = await _remote.updateProfile(fields);

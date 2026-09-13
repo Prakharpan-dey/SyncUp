@@ -238,6 +238,114 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
+  /// Asks for the new address and the current password. The account is then
+  /// unverified until the link sent to the new address is opened.
+  void _showChangeEmailDialog(BuildContext context, WidgetRef ref) {
+    final emailCtrl = TextEditingController();
+    final passwordCtrl = TextEditingController();
+    String? error;
+    var saving = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('CHANGE EMAIL'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: emailCtrl,
+                keyboardType: TextInputType.emailAddress,
+                autocorrect: false,
+                decoration: const InputDecoration(
+                  labelText: 'New email',
+                  prefixIcon: Icon(Icons.alternate_email_rounded),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: passwordCtrl,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Current password',
+                  prefixIcon: Icon(Icons.lock_rounded),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'We will send a link to confirm the new address. Friends, '
+                'groups and the feed stay locked until you open it.',
+                style: Theme.of(ctx).textTheme.bodySmall,
+              ),
+              if (error != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  error!,
+                  style: TextStyle(
+                    color: Theme.of(ctx).colorScheme.error,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: saving ? null : () => Navigator.pop(ctx),
+              child: const Text('CANCEL'),
+            ),
+            FilledButton(
+              onPressed: saving
+                  ? null
+                  : () async {
+                      // Captured before any await: the dialog may close.
+                      final messenger = ScaffoldMessenger.of(context);
+                      final newEmail = emailCtrl.text.trim();
+
+                      if (!ref.read(connectivityServiceProvider).isOnline) {
+                        setDialogState(() => error =
+                            'You are offline. Connect to change your email.');
+                        return;
+                      }
+                      if (!newEmail.contains('@') || passwordCtrl.text.isEmpty) {
+                        setDialogState(() => error =
+                            'Enter the new email and your current password.');
+                        return;
+                      }
+
+                      setDialogState(() {
+                        saving = true;
+                        error = null;
+                      });
+                      final failure = await ref
+                          .read(authViewModelProvider.notifier)
+                          .changeEmail(
+                            newEmail: newEmail,
+                            password: passwordCtrl.text,
+                          );
+                      if (!ctx.mounted) return;
+
+                      if (failure != null) {
+                        setDialogState(() {
+                          saving = false;
+                          error = failure;
+                        });
+                        return;
+                      }
+
+                      Navigator.pop(ctx);
+                      showAppSnackBarOn(
+                          messenger, 'Check $newEmail for a link to confirm it');
+                    },
+              child: const Text('CHANGE'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showEditProfileDialog(BuildContext context, WidgetRef ref) {
     final user = ref.read(authViewModelProvider).user;
     final nameCtrl = TextEditingController(text: user?.displayName);
@@ -266,6 +374,29 @@ class ProfileScreen extends ConsumerWidget {
                 prefixIcon: Icon(Icons.school_rounded),
               ),
               textCapitalization: TextCapitalization.words,
+            ),
+            const SizedBox(height: 12),
+            // Shown, not edited in place: moving the account needs the
+            // password and a confirmation link, so it has its own step.
+            TextField(
+              controller: TextEditingController(text: user?.email),
+              enabled: false,
+              decoration: InputDecoration(
+                labelText: user?.isEmailVerified == false
+                    ? 'Email (not confirmed yet)'
+                    : 'Email',
+                prefixIcon: const Icon(Icons.email_rounded),
+              ),
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _showChangeEmailDialog(context, ref);
+                },
+                child: const Text('CHANGE EMAIL'),
+              ),
             ),
           ],
         ),

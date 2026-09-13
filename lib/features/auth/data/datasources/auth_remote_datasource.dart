@@ -113,6 +113,19 @@ class AuthRemoteDataSource {
         'new_password': newPassword,
       });
 
+  /// Moves the account to a new address; the password is re-checked. The
+  /// server answers with the updated user, now unverified.
+  Future<Map<String, dynamic>> changeEmail({
+    required String newEmail,
+    required String password,
+  }) async {
+    final res = await _dio.post('/auth/change-email', data: {
+      'new_email': newEmail,
+      'password': password,
+    });
+    return Map<String, dynamic>.from(res.data as Map);
+  }
+
 
   Future<Map<String, dynamic>> getMe() async {
     final res = await _dio.get('/auth/me');

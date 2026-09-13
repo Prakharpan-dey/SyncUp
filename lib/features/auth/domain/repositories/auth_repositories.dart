@@ -20,6 +20,13 @@ abstract interface class AuthRepository {
   Future<Either<Failure, void>> deleteAccount(String password);
 
   Future<Either<Failure, User>> updateProfile(Map<String, dynamic> fields);
+
+  /// Moves the account to [newEmail] after re-checking [password]. The
+  /// returned user is unverified until the link sent there is opened.
+  Future<Either<Failure, User>> changeEmail({
+    required String newEmail,
+    required String password,
+  });
   Future<Either<Failure, User?>> getCurrentUser();
 
   /// Re-sends the verification link. Resolves to true if already verified.

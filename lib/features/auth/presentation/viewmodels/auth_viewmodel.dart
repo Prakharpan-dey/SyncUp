@@ -310,6 +310,21 @@ class AuthViewModel extends Notifier<AuthState> {
       },
     );
   }
+
+  /// Returns the error message, or null on success. On success the account
+  /// is unverified until the link sent to [newEmail] is opened.
+  Future<String?> changeEmail({
+    required String newEmail,
+    required String password,
+  }) async {
+    final result = await ref
+        .read(authRepositoryProvider)
+        .changeEmail(newEmail: newEmail, password: password);
+    return result.fold((f) => f.message, (user) {
+      state = state.copyWith(user: user);
+      return null;
+    });
+  }
 }
 
 // Manual provider registration
