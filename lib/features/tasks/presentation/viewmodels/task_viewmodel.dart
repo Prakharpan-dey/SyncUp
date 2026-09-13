@@ -64,6 +64,18 @@ class TaskListState {
   List<Task> get shareablePlan =>
       todaysPlan.where((t) => !t.isPrivate).toList();
 
+  /// Completed tasks still worth listing: those finished in the last 24
+  /// hours, newest first. Older ones stay stored — streaks and history count
+  /// them — but drop out of the lists instead of piling up for good.
+  List<Task> recentlyCompleted({DateTime? now}) {
+    final cutoff = (now ?? DateTime.now()).subtract(const Duration(hours: 24));
+    return tasks
+        .where((t) => t.isCompleted && (t.completedAt ?? t.updatedAt).isAfter(cutoff))
+        .toList()
+      ..sort((a, b) => (b.completedAt ?? b.updatedAt)
+          .compareTo(a.completedAt ?? a.updatedAt));
+  }
+
   /// The pending tasks worth drawing, with each repeating series collapsed to
   /// the one occurrence it is next due on.
   ///
@@ -77,6 +89,22 @@ class TaskListState {
   /// folding them away would put rows beyond the reach of ticking or deleting.
   List<Task> visiblePending({DateTime? now}) {
     final at = now ?? DateTime.now();
+    final startOfToday = DateTime(at.year, at.month, at.day);
+    final startOfTomorrow = DateTime(at.year, at.month, at.day + 1);
+
+    // Series with an occurrence on today's date, done or not. A repeating task
+    // shows on its day only: once today's is ticked, tomorrow's waits for
+    // tomorrow instead of jumping straight into UPCOMING. A series with
+    // nothing today (a weekly task on another day) still shows its next one.
+    final hasToday = <String>{
+      for (final t in tasks)
+        if (t.seriesId != null &&
+            t.dueDate != null &&
+            !t.dueDate!.isBefore(startOfToday) &&
+            t.dueDate!.isBefore(startOfTomorrow))
+          t.seriesId!,
+    };
+
     final soonestOfSeries = <String, Task>{};
     final rest = <Task>[];
 
@@ -87,6 +115,13 @@ class TaskListState {
 
       if (seriesId == null || (due != null && due.isBefore(at))) {
         rest.add(task);
+        continue;
+      }
+
+      // A later day of a series that already has one today.
+      if (hasToday.contains(seriesId) &&
+          due != null &&
+          !due.isBefore(startOfTomorrow)) {
         continue;
       }
 

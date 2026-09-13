@@ -85,13 +85,20 @@ void main() {
       expect(visible.single.id, 'today');
     });
 
-    test('completing today reveals tomorrow rather than nothing', () {
-      final visible = TaskListState(tasks: [
+    /// A daily task shows on its day only. Ticking today's used to put
+    /// tomorrow's straight into UPCOMING.
+    test('completing today hides the task until tomorrow', () {
+      final state = TaskListState(tasks: [
         occurrence(id: 'today', seriesId: 's1', dueDate: day(0), completed: true),
         occurrence(id: 'tomorrow', seriesId: 's1', dueDate: day(1)),
-      ]).visiblePending(now: now);
+      ]);
 
-      expect(visible.single.id, 'tomorrow');
+      expect(state.visiblePending(now: now), isEmpty);
+      // Come tomorrow, it is back.
+      expect(
+        state.visiblePending(now: DateTime(2026, 9, 6, 9)).single.id,
+        'tomorrow',
+      );
     });
 
     test('a weekly task with nothing due today still shows its next day', () {

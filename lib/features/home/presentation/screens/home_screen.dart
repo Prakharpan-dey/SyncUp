@@ -115,8 +115,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         .where((t) => t.dueAt == null || !t.dueAt!.isAfter(endOfToday))
         .toList()
       ..sort(_byDueThenCreated);
-    final completedTasks =
-        taskState.tasks.where((t) => t.isCompleted).toList();
+    // Finished in the last 24 hours only — older ones stay in history.
+    final completedTasks = taskState.recentlyCompleted();
 
     return Scaffold(
       body: SafeArea(

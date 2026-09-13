@@ -89,4 +89,18 @@ void main() {
       expect(state.todaysPlan.length, 2);
     });
   });
+
+  group('completed tasks in the lists', () {
+    /// They used to stay listed forever.
+    test('stay listed for a day after being ticked, newest first', () {
+      final state = TaskListState(tasks: [
+        task(id: 'stale', completedAt: now.subtract(const Duration(hours: 25))),
+        task(id: 'older', completedAt: now.subtract(const Duration(hours: 5))),
+        task(id: 'fresh', completedAt: now.subtract(const Duration(hours: 1))),
+      ]);
+
+      expect(state.recentlyCompleted(now: now).map((t) => t.id), ['fresh', 'older']);
+      expect(state.completedCount, 3, reason: 'history still has all of them');
+    });
+  });
 }

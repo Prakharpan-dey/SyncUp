@@ -173,9 +173,8 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     // ObjectBox insertion order, as a full TaskCard each — a daily habit adds
     // 365 of them a year and the section became the whole screen. The rows all
     // still exist; only what is drawn is capped.
-    final completedTasks = taskState.tasks.where((t) => t.isCompleted).toList()
-      ..sort((a, b) => (b.completedAt ?? b.updatedAt)
-          .compareTo(a.completedAt ?? a.updatedAt));
+    // Only what was finished in the last 24 hours; older ones stay in history.
+    final completedTasks = taskState.recentlyCompleted();
     final shownCompleted = completedTasks.take(kCompletedShown).toList();
     final hiddenCompleted = completedTasks.length - shownCompleted.length;
 
