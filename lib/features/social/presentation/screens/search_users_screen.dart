@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/auth/current_user.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -178,6 +179,9 @@ class _SearchUsersScreenState extends ConsumerState<SearchUsersScreen> {
                           return UserSearchCard(
                             user: user,
                             onAddFriend: () => _addFriend(user),
+                            // They already asked you: answer it where
+                            // requests live rather than sending a second.
+                            onRespond: () => context.go('/feed/friends'),
                           );
                         },
                       ),

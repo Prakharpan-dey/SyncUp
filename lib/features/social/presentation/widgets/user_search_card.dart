@@ -7,18 +7,23 @@ import '../../domain/entities/user_summary.dart';
 class UserSearchCard extends StatelessWidget {
   final UserSummary user;
   final VoidCallback? onAddFriend;
+
+  /// For someone who has already sent *you* a request.
+  final VoidCallback? onRespond;
   final bool requestSent;
 
   const UserSearchCard({
     super.key,
     required this.user,
     this.onAddFriend,
+    this.onRespond,
     this.requestSent = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final status = user.friendshipStatus;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -49,21 +54,21 @@ class UserSearchCard extends StatelessWidget {
               ],
             ),
           ),
-          if (requestSent)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: NeoBrutalism.chipDecoration(
-                color: AppColors.success,
-                isDark: isDark,
+          // Already friends, or already asked: a label, not a button. ADD used
+          // to show for everyone and could only fail with "already exists".
+          if (status == 'friends')
+            _StatusChip(label: 'ADDED', color: AppColors.success, isDark: isDark)
+          else if (requestSent || status == 'requested')
+            _StatusChip(label: 'REQUESTED', color: AppColors.primary, isDark: isDark)
+          else if (status == 'incoming' && onRespond != null)
+            FilledButton.tonal(
+              onPressed: onRespond,
+              style: FilledButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                textStyle: const TextStyle(fontSize: 12),
               ),
-              child: const Text(
-                'SENT',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12,
-                ),
-              ),
+              child: const Text('RESPOND'),
             )
           else if (onAddFriend != null)
             FilledButton.tonalIcon(
@@ -77,6 +82,30 @@ class UserSearchCard extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  final String label;
+  final Color color;
+  final bool isDark;
+
+  const _StatusChip({required this.label, required this.color, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: NeoBrutalism.chipDecoration(color: color, isDark: isDark),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
+        ),
       ),
     );
   }
