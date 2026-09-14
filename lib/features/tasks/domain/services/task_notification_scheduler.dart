@@ -53,6 +53,33 @@ class TaskNotificationScheduler {
     return wanted.take(kMaxScheduled).toList();
   }
 
+  /// Reminders the phone should already have shown: tasks with a time of day
+  /// whose moment passed within [lookback] — unless they were ticked off
+  /// before it, which cancelled the reminder. Newest first.
+  ///
+  /// The notifications tab only listed what the server sent, and the server
+  /// never sends these (see [desired]: timed tasks are reminded on the device),
+  /// so a reminder the user had just seen was nowhere in the list.
+  static List<Task> fired(
+    List<Task> tasks, {
+    required bool remindersEnabled,
+    DateTime? now,
+    Duration lookback = const Duration(days: 7),
+  }) {
+    if (!remindersEnabled) return const [];
+    final to = now ?? DateTime.now();
+    final from = to.subtract(lookback);
+
+    return tasks.where((t) {
+      if (t.dueMinutes == null) return false;
+      final at = t.dueAt;
+      if (at == null || at.isAfter(to) || !at.isAfter(from)) return false;
+      final done = t.completedAt;
+      return !t.isCompleted || done == null || done.isAfter(at);
+    }).toList()
+      ..sort((a, b) => b.dueAt!.compareTo(a.dueAt!));
+  }
+
   /// Schedules what is missing and cancels what is no longer wanted.
   Future<void> sync(
     List<Task> tasks, {
