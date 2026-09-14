@@ -4,7 +4,7 @@ import '../../domain/entities/task.dart';
 class TaskDto {
   final String id, userId, title, priority, status;
   final String? description, dueDate, completedAt, seriesId, dueTime,
-      sharingOverride;
+      sharingOverride, createdAt, updatedAt;
   final List<String> tags;
 
   const TaskDto({
@@ -12,6 +12,7 @@ class TaskDto {
     this.description, this.dueDate, required this.priority,
     required this.status, this.tags = const [], this.completedAt,
     this.seriesId, this.dueTime, this.sharingOverride,
+    this.createdAt, this.updatedAt,
   });
 
   factory TaskDto.fromJson(Map<String, dynamic> json) => TaskDto(
@@ -23,6 +24,8 @@ class TaskDto {
     seriesId: json['series_id'],
     dueTime: json['due_time'],
     sharingOverride: json['sharing_override'],
+    createdAt: json['created_at'],
+    updatedAt: json['updated_at'],
   );
 
   /// The wire payload for `POST /tasks` and `PATCH /tasks/:id`.
@@ -49,12 +52,18 @@ class TaskDto {
     dueDate: dueDate != null ? DateTime.parse(dueDate!) : null,
     priority: TaskPriority.values.byName(priority),
     status: TaskStatus.values.byName(status), tags: tags,
-    completedAt: completedAt != null ? DateTime.parse(completedAt!) : null,
+    // The server sends UTC. Local, so the day a completion counts for — the
+    // streak and the weekly recap — is the user's day, not Greenwich's.
+    completedAt: _local(completedAt),
     seriesId: seriesId,
     dueMinutes: DateHelpers.parseApiTime(dueTime),
     sharingOverride: sharingOverride,
-    createdAt: DateTime.now(), updatedAt: DateTime.now(),
+    createdAt: _local(createdAt) ?? DateTime.now(),
+    updatedAt: _local(updatedAt) ?? DateTime.now(),
   );
+
+  static DateTime? _local(String? iso) =>
+      iso != null ? DateTime.parse(iso).toLocal() : null;
 
   factory TaskDto.fromDomain(Task t) => TaskDto(
     id: t.id, userId: t.userId, title: t.title, description: t.description,

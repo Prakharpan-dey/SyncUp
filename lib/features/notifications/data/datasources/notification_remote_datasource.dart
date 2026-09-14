@@ -21,6 +21,14 @@ class NotificationRemoteDataSource {
     await _dio.patch('/notifications/read-all');
   }
 
+  Future<void> deleteNotification(String notificationId) async {
+    await _dio.delete('/notifications/$notificationId');
+  }
+
+  Future<void> clearAll() async {
+    await _dio.delete('/notifications');
+  }
+
   Future<int> getUnreadCount() async {
     final res = await _dio.get('/notifications/unread-count');
     return res.data['count'] ?? 0;

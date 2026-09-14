@@ -55,6 +55,10 @@ class _FakeTaskRepo implements TaskRepository {
 
   @override
   Future<Either<Failure, Task>> toggleCompletion(Task task) async => Right(task);
+
+  @override
+  Future<Either<Failure, bool>> pullFromServer(String userId) async =>
+      const Right(false);
 }
 
 class _FakeSeriesRepo implements TaskSeriesRepository {
@@ -82,6 +86,10 @@ class _FakeSeriesRepo implements TaskSeriesRepository {
     deletedSeries.add((seriesId, deletePending));
     return const Right(null);
   }
+
+  @override
+  Future<Either<Failure, bool>> pullFromServer(String userId) async =>
+      const Right(false);
 }
 
 /// Seeds the task list and neutralises the reload, which would otherwise pull

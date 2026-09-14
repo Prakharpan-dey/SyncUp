@@ -4,6 +4,7 @@ import 'package:syncup/core/error/failures.dart';
 import 'package:syncup/core/storage/models/task_ob.dart';
 import 'package:syncup/core/storage/object_box_store.dart';
 import 'package:syncup/core/sync/connectivity_service.dart';
+import 'package:syncup/core/sync/pull_merge.dart';
 import 'package:syncup/core/sync/sync_manager.dart';
 import 'package:syncup/features/tasks/data/datasources/task_remote_datasource.dart';
 import 'package:syncup/features/tasks/data/models/task_dto.dart';
@@ -47,8 +48,12 @@ class TaskRepositoryImpl implements TaskRepository {
     final existing = q.findFirst();
     q.close();
 
+    return _toOb(task, obId: existing?.obId ?? 0, isSynced: isSynced);
+  }
+
+  TaskOB _toOb(Task task, {required int obId, required bool isSynced}) {
     return TaskOB(
-      obId: existing?.obId ?? 0,
+      obId: obId,
       id: task.id,
       userId: task.userId,
       title: task.title,
@@ -77,18 +82,28 @@ class TaskRepositoryImpl implements TaskRepository {
   }) {
     // Run async without awaiting — local save already done by caller
     () async {
-      if (await _connectivity.checkConnectivity()) {
-        try {
-          await remoteFn();
-          // Mark as synced
-          final q = _box.query(TaskOB_.id.equals(entityId)).build();
-          final local = q.findFirst();
-          q.close();
-          if (local != null) {
-            local.isSynced = true;
-            _box.put(local);
+      _inFlight.add(entityId);
+      try {
+        if (await _connectivity.checkConnectivity()) {
+          try {
+            await remoteFn();
+            // Mark as synced
+            final q = _box.query(TaskOB_.id.equals(entityId)).build();
+            final local = q.findFirst();
+            q.close();
+            if (local != null) {
+              local.isSynced = true;
+              _box.put(local);
+            }
+          } catch (_) {
+            await _syncManager.enqueue(
+              operationType: operationType,
+              entityType: 'task',
+              entityId: entityId,
+              payload: payload,
+            );
           }
-        } catch (_) {
+        } else {
           await _syncManager.enqueue(
             operationType: operationType,
             entityType: 'task',
@@ -96,16 +111,15 @@ class TaskRepositoryImpl implements TaskRepository {
             payload: payload,
           );
         }
-      } else {
-        await _syncManager.enqueue(
-          operationType: operationType,
-          entityType: 'task',
-          entityId: entityId,
-          payload: payload,
-        );
+      } finally {
+        _inFlight.remove(entityId);
       }
     }();
   }
+
+  /// Ids with a direct push under way: not in the outbox, not on the server
+  /// yet. A pull leaves them alone, exactly like queued ones.
+  final _inFlight = <String>{};
 
   // interface methods 
 
@@ -300,5 +314,53 @@ class TaskRepositoryImpl implements TaskRepository {
     } catch (e) {
       return Left(CacheFailure(e.toString()));
     }
+  }
+
+  @override
+  Future<Either<Failure, bool>> pullFromServer(String userId) async {
+    try {
+      final remote = [
+        for (final json in await _remote.getTasks())
+          TaskDto.fromJson(json).toDomain(),
+      ].where((t) => t.userId == userId).toList();
+
+      final q = _box.query(TaskOB_.userId.equals(userId)).build();
+      final local = q.find();
+      q.close();
+
+      final plan = planPull(
+        local: [
+          for (final o in local)
+            (id: o.id, isSynced: o.isSynced, updatedAt: o.updatedAt),
+        ],
+        remote: [for (final t in remote) (id: t.id, updatedAt: t.updatedAt)],
+        queued: {..._syncManager.queuedEntityIds('task'), ..._inFlight},
+      );
+      if (plan.take.isEmpty && plan.remove.isEmpty) return const Right(false);
+
+      final taken = remote.where((t) => plan.take.contains(t.id)).toList();
+      final existing = _obIdsFor(taken.map((t) => t.id));
+      _box.putMany([
+        for (final t in taken)
+          _toOb(t, obId: existing[t.id] ?? 0, isSynced: true),
+      ]);
+      _box.removeMany([
+        for (final o in local)
+          if (plan.remove.contains(o.id)) o.obId,
+      ]);
+      return const Right(true);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  /// ObjectBox ids of the rows already stored under [ids], in one query.
+  Map<String, int> _obIdsFor(Iterable<String> ids) {
+    final list = ids.toList();
+    if (list.isEmpty) return const {};
+    final q = _box.query(TaskOB_.id.oneOf(list)).build();
+    final found = {for (final o in q.find()) o.id: o.obId};
+    q.close();
+    return found;
   }
 }

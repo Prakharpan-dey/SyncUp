@@ -3,6 +3,7 @@ import 'package:syncup/core/error/failures.dart';
 import 'package:syncup/core/storage/models/task_series_ob.dart';
 import 'package:syncup/core/storage/object_box_store.dart';
 import 'package:syncup/core/sync/connectivity_service.dart';
+import 'package:syncup/core/sync/pull_merge.dart';
 import 'package:syncup/core/sync/sync_manager.dart';
 import 'package:syncup/features/tasks/data/datasources/task_series_remote_datasource.dart';
 import 'package:syncup/features/tasks/data/models/task_series_dto.dart';
@@ -47,8 +48,12 @@ class TaskSeriesRepositoryImpl implements TaskSeriesRepository {
     final existing = q.findFirst();
     q.close();
 
+    return _toOb(s, obId: existing?.obId ?? 0, isSynced: isSynced);
+  }
+
+  TaskSeriesOB _toOb(TaskSeries s, {required int obId, required bool isSynced}) {
     return TaskSeriesOB(
-      obId: existing?.obId ?? 0,
+      obId: obId,
       id: s.id,
       userId: s.userId,
       title: s.title,
@@ -76,28 +81,82 @@ class TaskSeriesRepositoryImpl implements TaskSeriesRepository {
     required Future<void> Function() remoteFn,
   }) {
     () async {
-      if (await _connectivity.checkConnectivity()) {
-        try {
-          await remoteFn();
-          final q = _box.query(TaskSeriesOB_.id.equals(entityId)).build();
-          final local = q.findFirst();
-          q.close();
-          if (local != null) {
-            local.isSynced = true;
-            _box.put(local);
+      _inFlight.add(entityId);
+      try {
+        if (await _connectivity.checkConnectivity()) {
+          try {
+            await remoteFn();
+            final q = _box.query(TaskSeriesOB_.id.equals(entityId)).build();
+            final local = q.findFirst();
+            q.close();
+            if (local != null) {
+              local.isSynced = true;
+              _box.put(local);
+            }
+            return;
+          } catch (_) {
+            // fall through to the queue
           }
-          return;
-        } catch (_) {
-          // fall through to the queue
         }
+        await _syncManager.enqueue(
+          operationType: operationType,
+          entityType: 'task_series',
+          entityId: entityId,
+          payload: payload,
+        );
+      } finally {
+        _inFlight.remove(entityId);
       }
-      await _syncManager.enqueue(
-        operationType: operationType,
-        entityType: 'task_series',
-        entityId: entityId,
-        payload: payload,
-      );
     }();
+  }
+
+  /// Ids with a direct push under way — see [TaskRepositoryImpl].
+  final _inFlight = <String>{};
+
+  @override
+  Future<Either<Failure, bool>> pullFromServer(String userId) async {
+    try {
+      final remote = [
+        for (final json in await _remote.getSeries())
+          TaskSeriesDto.fromJson(json).toDomain(),
+      ].where((s) => s.userId == userId).toList();
+
+      final q = _box.query(TaskSeriesOB_.userId.equals(userId)).build();
+      final local = q.find();
+      q.close();
+
+      final plan = planPull(
+        local: [
+          for (final o in local)
+            (id: o.id, isSynced: o.isSynced, updatedAt: o.updatedAt),
+        ],
+        remote: [for (final s in remote) (id: s.id, updatedAt: s.updatedAt)],
+        queued: {..._syncManager.queuedEntityIds('task_series'), ..._inFlight},
+      );
+      if (plan.take.isEmpty && plan.remove.isEmpty) return const Right(false);
+
+      final taken = remote.where((s) => plan.take.contains(s.id)).toList();
+      final ids = taken.map((s) => s.id).toList();
+      final existing = <String, int>{};
+      if (ids.isNotEmpty) {
+        final eq = _box.query(TaskSeriesOB_.id.oneOf(ids)).build();
+        for (final o in eq.find()) {
+          existing[o.id] = o.obId;
+        }
+        eq.close();
+      }
+      _box.putMany([
+        for (final s in taken)
+          _toOb(s, obId: existing[s.id] ?? 0, isSynced: true),
+      ]);
+      _box.removeMany([
+        for (final o in local)
+          if (plan.remove.contains(o.id)) o.obId,
+      ]);
+      return const Right(true);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
   }
 
   @override

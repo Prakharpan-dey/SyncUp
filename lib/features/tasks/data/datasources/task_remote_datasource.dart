@@ -4,9 +4,20 @@ class TaskRemoteDataSource {
   final Dio _dio;
   TaskRemoteDataSource(this._dio);
 
-  Future<List<Map<String, dynamic>>> getTasks(String userId) async {
-    final res = await _dio.get('/tasks', queryParameters: {'user_id': userId});
-    return List<Map<String, dynamic>>.from(res.data['tasks'] ?? []);
+  /// Every task on the account. The API answers with a bare array; a wrapped
+  /// `{tasks: [...]}` is still accepted.
+  Future<List<Map<String, dynamic>>> getTasks() async {
+    final res = await _dio.get('/tasks');
+    final data = res.data;
+    final list = data is List
+        ? data
+        : data is Map && data['tasks'] is List
+            ? data['tasks'] as List
+            : const [];
+    return [
+      for (final item in list)
+        if (item is Map) Map<String, dynamic>.from(item),
+    ];
   }
 
   Future<Map<String, dynamic>> createTask(Map<String, dynamic> data) async {

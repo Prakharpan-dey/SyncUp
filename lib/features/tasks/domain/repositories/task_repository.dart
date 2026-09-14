@@ -21,4 +21,8 @@ abstract interface class TaskRepository {
   /// ones. No outbox traffic — the server does the same itself when the series
   /// is deleted with its pending days.
   Future<Either<Failure, void>> removeSeriesLocally(String seriesId);
+
+  /// Brings the server's copy of [userId]'s tasks down to the device. For a
+  /// signed-in account only. True when anything on the device changed.
+  Future<Either<Failure, bool>> pullFromServer(String userId);
 }

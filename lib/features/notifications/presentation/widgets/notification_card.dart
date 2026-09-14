@@ -66,22 +66,27 @@ class NotificationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    // Either way clears it. Only right-to-left used to work, and all it did
+    // was mark the notification read.
+    Widget clearBackground(Alignment alignment) => Container(
+          alignment: alignment,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          decoration: BoxDecoration(
+            color: AppColors.error.withValues(alpha: 0.1),
+            border: Border.all(
+              color: isDark ? AppColors.borderDark : AppColors.border,
+              width: NeoBrutalism.borderWidthSmall,
+            ),
+          ),
+          child: const Icon(Icons.delete_outline_rounded, color: AppColors.error),
+        );
+
     return Dismissible(
       key: Key(notification.id),
-      direction: DismissDirection.endToStart,
+      direction: DismissDirection.horizontal,
       onDismissed: (_) => onDismiss?.call(),
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        decoration: BoxDecoration(
-          color: AppColors.success.withValues(alpha: 0.1),
-          border: Border.all(
-            color: isDark ? AppColors.borderDark : AppColors.border,
-            width: NeoBrutalism.borderWidthSmall,
-          ),
-        ),
-        child: const Icon(Icons.done_all_rounded, color: AppColors.success),
-      ),
+      background: clearBackground(Alignment.centerLeft),
+      secondaryBackground: clearBackground(Alignment.centerRight),
       child: GestureDetector(
         onTap: onTap,
         child: Container(

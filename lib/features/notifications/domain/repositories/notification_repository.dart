@@ -6,5 +6,7 @@ abstract interface class NotificationRepository {
   Future<Either<Failure, List<AppNotification>>> getNotifications();
   Future<Either<Failure, void>> markAsRead(String notificationId);
   Future<Either<Failure, void>> markAllAsRead();
+  Future<Either<Failure, void>> deleteNotification(String notificationId);
+  Future<Either<Failure, void>> clearAll();
   Future<Either<Failure, int>> getUnreadCount();
 }

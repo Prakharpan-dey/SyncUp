@@ -16,4 +16,8 @@ abstract interface class TaskSeriesRepository {
   /// completed ones stay, detached. Without it, every day is kept.
   Future<Either<Failure, void>> deleteSeries(String seriesId,
       {bool deletePending = false});
+
+  /// Brings the server's copy of [userId]'s repeating rules down to the
+  /// device. For a signed-in account only. True when anything changed.
+  Future<Either<Failure, bool>> pullFromServer(String userId);
 }

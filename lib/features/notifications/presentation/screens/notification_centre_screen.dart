@@ -29,6 +29,15 @@ class _NotificationCentreScreenState
     final state = ref.watch(notificationViewModelProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    // A swipe or clear the server refused puts the card back; say why.
+    ref.listen(notificationViewModelProvider.select((s) => s.error),
+        (_, error) {
+      if (error == null) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(error)));
+    });
+
     return Scaffold(
       appBar: AppBar(
         // Opened from Profile, this is pushed and the router supplies the back
@@ -48,6 +57,12 @@ class _NotificationCentreScreenState
               },
               icon: const Icon(Icons.done_all_rounded, size: 18),
               label: const Text('READ ALL'),
+            ),
+          if (state.notifications.isNotEmpty)
+            IconButton(
+              tooltip: 'Clear all',
+              icon: const Icon(Icons.delete_sweep_rounded),
+              onPressed: () => _confirmClearAll(context),
             ),
         ],
       ),
@@ -92,13 +107,36 @@ class _NotificationCentreScreenState
                       onDismiss: () {
                         ref
                             .read(notificationViewModelProvider.notifier)
-                            .markAsRead(notification.id);
+                            .dismiss(notification.id);
                       },
                     );
                   },
                 ),
             ),
     );
+  }
+
+  Future<void> _confirmClearAll(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Clear all notifications?'),
+        content: const Text('They will be removed for good.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('CANCEL'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('CLEAR'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await ref.read(notificationViewModelProvider.notifier).clearAll();
+    }
   }
 
   Widget _buildEmptyState(BuildContext context, bool isDark) {

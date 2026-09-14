@@ -42,9 +42,10 @@ class NotificationViewModel extends Notifier<NotificationState> {
   /// Reminders the phone fired itself are listed as `local:<task id>`.
   static const _kLocalPrefix = 'local:';
 
-  /// Which of those have been read. Kept on the device: the server never
-  /// knew about them.
+  /// Which of those have been read, and which cleared. Kept on the device:
+  /// the server never knew about them.
   static const _kLocalReadKey = 'local_reminders_read';
+  static const _kLocalDismissedKey = 'local_reminders_dismissed';
 
   Future<void> loadNotifications() async {
     state = state.copyWith(isLoading: true, error: null);
@@ -68,7 +69,7 @@ class NotificationViewModel extends Notifier<NotificationState> {
 
   Future<void> markAsRead(String id) async {
     if (id.startsWith(_kLocalPrefix)) {
-      await _saveLocalRead({...await _loadLocalRead(), id});
+      await _addIds(_kLocalReadKey, [id]);
       _markRead((n) => n.id == id);
       return;
     }
@@ -81,10 +82,7 @@ class NotificationViewModel extends Notifier<NotificationState> {
   }
 
   Future<void> markAllAsRead() async {
-    final localIds = state.notifications
-        .where((n) => n.id.startsWith(_kLocalPrefix))
-        .map((n) => n.id);
-    await _saveLocalRead({...await _loadLocalRead(), ...localIds});
+    await _addIds(_kLocalReadKey, _localIds(state.notifications));
 
     final result =
         await ref.read(notificationRepositoryProvider).markAllAsRead();
@@ -97,12 +95,52 @@ class NotificationViewModel extends Notifier<NotificationState> {
     );
   }
 
+  /// Swiped away: gone for good, here and on the server.
+  ///
+  /// Swiping used to only mark it read. The card slid off, but the
+  /// notification stayed in the list and was back the next time it opened.
+  Future<void> dismiss(String id) async {
+    final gone = state.notifications.where((n) => n.id == id).firstOrNull;
+    if (gone == null) return;
+    // Straight away: a swiped card must leave the list the moment it goes.
+    _publish(state.notifications.where((n) => n.id != id).toList());
+
+    if (id.startsWith(_kLocalPrefix)) {
+      await _addIds(_kLocalDismissedKey, [id]);
+      return;
+    }
+    final result =
+        await ref.read(notificationRepositoryProvider).deleteNotification(id);
+    // Put it back rather than pretend: it would reappear on the next load.
+    result.fold(
+      (f) => _publish(_merge([...state.notifications, gone], const []),
+          error: f.message),
+      (_) {},
+    );
+  }
+
+  /// Empties the list, here and on the server.
+  Future<void> clearAll() async {
+    final all = state.notifications;
+    await _addIds(_kLocalDismissedKey, _localIds(all));
+
+    final result = await ref.read(notificationRepositoryProvider).clearAll();
+    result.fold(
+      (f) => _publish(
+        all.where((n) => !n.id.startsWith(_kLocalPrefix)).toList(),
+        error: f.message,
+      ),
+      (_) => _publish(const []),
+    );
+  }
+
   /// Task reminders the device showed. Timed tasks are reminded on the phone,
   /// never through the server, so the list — which only held what the server
   /// sent — was missing the notifications the user actually got most often.
   Future<List<AppNotification>> _localReminders() async {
     try {
-      final read = await _loadLocalRead();
+      final read = await _loadIds(_kLocalReadKey);
+      final dismissed = await _loadIds(_kLocalDismissedKey);
       final tasks = ref.read(taskViewModelProvider).tasks;
       final enabled = ref
               .read(authViewModelProvider)
@@ -114,21 +152,25 @@ class NotificationViewModel extends Notifier<NotificationState> {
           tasks,
           remindersEnabled: enabled,
         ))
-          AppNotification(
-            id: '$_kLocalPrefix${t.id}',
-            type: NotificationType.taskReminder,
-            title: t.title,
-            body: t.isRecurring ? 'Due now' : 'Task due now',
-            isRead: read.contains('$_kLocalPrefix${t.id}'),
-            deepLink: '/tasks/${t.id}',
-            createdAt: t.dueAt!,
-          ),
+          if (!dismissed.contains('$_kLocalPrefix${t.id}'))
+            AppNotification(
+              id: '$_kLocalPrefix${t.id}',
+              type: NotificationType.taskReminder,
+              title: t.title,
+              body: t.isRecurring ? 'Due now' : 'Task due now',
+              isRead: read.contains('$_kLocalPrefix${t.id}'),
+              deepLink: '/tasks/${t.id}',
+              createdAt: t.dueAt!,
+            ),
       ];
     } catch (_) {
       // A convenience on top of the server's list; never the reason it fails.
       return const [];
     }
   }
+
+  Iterable<String> _localIds(List<AppNotification> list) =>
+      list.where((n) => n.id.startsWith(_kLocalPrefix)).map((n) => n.id);
 
   List<AppNotification> _merge(
     List<AppNotification> server,
@@ -155,10 +197,9 @@ class NotificationViewModel extends Notifier<NotificationState> {
     );
   }
 
-  Future<Set<String>> _loadLocalRead() async {
+  Future<Set<String>> _loadIds(String key) async {
     try {
-      final raw =
-          await ref.read(secureStorageProvider).read(key: _kLocalReadKey);
+      final raw = await ref.read(secureStorageProvider).read(key: key);
       if (raw == null || raw.isEmpty) return {};
       return (jsonDecode(raw) as List).cast<String>().toSet();
     } catch (_) {
@@ -166,16 +207,17 @@ class NotificationViewModel extends Notifier<NotificationState> {
     }
   }
 
-  Future<void> _saveLocalRead(Set<String> ids) async {
+  Future<void> _addIds(String key, Iterable<String> ids) async {
+    if (ids.isEmpty) return;
     // Bounded: only the last week of reminders is ever listed.
-    final kept = ids.toList();
+    final kept = {...await _loadIds(key), ...ids}.toList();
     if (kept.length > 200) kept.removeRange(0, kept.length - 200);
     try {
       await ref
           .read(secureStorageProvider)
-          .write(key: _kLocalReadKey, value: jsonEncode(kept));
+          .write(key: key, value: jsonEncode(kept));
     } catch (_) {
-      // Worst case a reminder shows as unread again.
+      // Worst case a reminder shows again.
     }
   }
 }

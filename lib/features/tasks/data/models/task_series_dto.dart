@@ -5,6 +5,7 @@ import '../../domain/entities/task_series.dart';
 class TaskSeriesDto {
   final String id, userId, title, priority, weekdays, startsOn;
   final String? description, dueTime, endsOn, generatedThrough;
+  final String? createdAt, updatedAt;
   final List<String> tags;
   final bool active;
 
@@ -21,6 +22,8 @@ class TaskSeriesDto {
     this.endsOn,
     this.active = true,
     this.generatedThrough,
+    this.createdAt,
+    this.updatedAt,
   });
 
   factory TaskSeriesDto.fromJson(Map<String, dynamic> json) => TaskSeriesDto(
@@ -36,6 +39,8 @@ class TaskSeriesDto {
         endsOn: json['ends_on'],
         active: json['active'] ?? true,
         generatedThrough: json['generated_through'],
+        createdAt: json['created_at'],
+        updatedAt: json['updated_at'],
       );
 
   /// Same no-nulls contract as [TaskDto.toJson]: the API validates optional
@@ -68,8 +73,10 @@ class TaskSeriesDto {
         active: active,
         generatedThrough:
             generatedThrough != null ? DateTime.parse(generatedThrough!) : null,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt:
+            createdAt != null ? DateTime.parse(createdAt!).toLocal() : DateTime.now(),
+        updatedAt:
+            updatedAt != null ? DateTime.parse(updatedAt!).toLocal() : DateTime.now(),
       );
 
   factory TaskSeriesDto.fromDomain(TaskSeries s) => TaskSeriesDto(

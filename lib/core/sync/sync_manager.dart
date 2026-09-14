@@ -188,6 +188,22 @@ class SyncManager {
     return status >= 400;
   }
 
+  /// Ids of [entityType] with a write still waiting to reach the server.
+  ///
+  /// A pull must leave these alone: the server's copy is older than the
+  /// device's, and taking it would undo the change — or bring back a delete.
+  Set<String> queuedEntityIds(String entityType) {
+    final q = _store
+        .box<SyncQueueItemOB>()
+        .query(SyncQueueItemOB_.entityType
+            .equals(entityType)
+            .and(SyncQueueItemOB_.status.oneOf(const ['pending', 'in_flight'])))
+        .build();
+    final ids = q.find().map((i) => i.entityId).toSet();
+    q.close();
+    return ids;
+  }
+
   int get failedCount {
     final q = _store
         .box<SyncQueueItemOB>()

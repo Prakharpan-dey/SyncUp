@@ -71,6 +71,25 @@ class NotificationRepositoryImpl implements NotificationRepository {
   }
 
   @override
+  Future<Either<Failure, void>> deleteNotification(String notificationId) =>
+      _online(() => _remote.deleteNotification(notificationId));
+
+  @override
+  Future<Either<Failure, void>> clearAll() => _online(_remote.clearAll);
+
+  Future<Either<Failure, void>> _online(Future<void> Function() call) async {
+    if (!_connectivity.isOnline) {
+      return const Left(NetworkFailure('Connect to the internet'));
+    }
+    try {
+      await call();
+      return const Right(null);
+    } catch (e) {
+      return Left(_mapError(e));
+    }
+  }
+
+  @override
   Future<Either<Failure, int>> getUnreadCount() async {
     try {
       final count = await _remote.getUnreadCount();

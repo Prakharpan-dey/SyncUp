@@ -150,10 +150,37 @@ class TaskViewModel extends Notifier<TaskListState> {
 
   Future<void> loadTasks(String userId) async {
     state = state.copyWith(isLoading: true, error: null);
+    await _readLocal(userId);
 
+    // Signed in, the server holds the account's tasks — after a reinstall, the
+    // only copy of them. A guest's tasks live on this device alone, so there
+    // is nothing to fetch and the device is all that is read.
+    final auth = ref.read(authViewModelProvider);
+    if (auth.status != AuthStatus.authenticated || auth.user?.id != userId) {
+      return;
+    }
+    if (await _pullFromServer(userId)) await _readLocal(userId);
+  }
+
+  /// A pull already under way, shared by every caller: Home and Tasks both
+  /// load on open.
+  Future<bool>? _pulling;
+
+  Future<bool> _pullFromServer(String userId) =>
+      _pulling ??= _pull(userId).whenComplete(() => _pulling = null);
+
+  Future<bool> _pull(String userId) async {
+    // Rules first: generation reads their watermarks, and without the rules
+    // it would have nothing to fill in.
+    final series =
+        await ref.read(taskSeriesRepositoryProvider).pullFromServer(userId);
+    final tasks = await ref.read(taskRepositoryProvider).pullFromServer(userId);
+    return series.getOrElse((_) => false) | tasks.getOrElse((_) => false);
+  }
+
+  Future<void> _readLocal(String userId) async {
     // Materialize any repeating occurrences that have come due before reading,
-    // so the list below already contains them. Generation happens here rather
-    // than server-side because the app never hydrates tasks from the API.
+    // so the list below already contains them.
     try {
       await ref.read(generateOccurrencesUseCaseProvider)(userId);
     } catch (_) {
