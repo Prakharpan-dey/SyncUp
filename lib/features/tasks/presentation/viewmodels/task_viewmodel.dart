@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../../core/theme/theme_mode_provider.dart';
 import '../../../../core/utils/date_helpers.dart';
 import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../../di/task_providers.dart';
@@ -64,13 +65,18 @@ class TaskListState {
   List<Task> get shareablePlan =>
       todaysPlan.where((t) => !t.isPrivate).toList();
 
-  /// Completed tasks still worth listing: those finished in the last 24
-  /// hours, newest first. Older ones stay stored — streaks and history count
-  /// them — but drop out of the lists instead of piling up for good.
-  List<Task> recentlyCompleted({DateTime? now}) {
-    final cutoff = (now ?? DateTime.now()).subtract(const Duration(hours: 24));
+  /// Completed tasks worth listing: those finished today, newest first.
+  ///
+  /// Anything ticked on an earlier day stays stored — streaks and history
+  /// count it — but no longer shows. A rolling 24 hours kept last night's
+  /// ticks on today's list until well into the next evening.
+  List<Task> completedToday({DateTime? now}) {
+    final at = now ?? DateTime.now();
+    final startOfToday = DateTime(at.year, at.month, at.day);
     return tasks
-        .where((t) => t.isCompleted && (t.completedAt ?? t.updatedAt).isAfter(cutoff))
+        .where((t) =>
+            t.isCompleted &&
+            !(t.completedAt ?? t.updatedAt).isBefore(startOfToday))
         .toList()
       ..sort((a, b) => (b.completedAt ?? b.updatedAt)
           .compareTo(a.completedAt ?? a.updatedAt));
@@ -119,6 +125,15 @@ class TaskListState {
   }
 }
 
+/// How long the device's copy is trusted before a load asks the server again
+/// on its own. Pull-to-refresh always asks.
+const kTaskPullInterval = Duration(hours: 6);
+
+/// Whether a plain load should ask the server: never asked on this install,
+/// or not for [kTaskPullInterval].
+bool pullDue(DateTime? lastPull, DateTime now) =>
+    lastPull == null || now.difference(lastPull) >= kTaskPullInterval;
+
 /// Nulls sort last: an occurrence always carries a date, but a row without one
 /// must not win the comparison by default and hide the dated occurrences.
 bool _isSooner(DateTime? candidate, DateTime? incumbent) {
@@ -148,7 +163,9 @@ class TaskViewModel extends Notifier<TaskListState> {
         .sync(state.tasks, remindersEnabled: _remindersEnabled);
   }
 
-  Future<void> loadTasks(String userId) async {
+  /// Reads the device's tasks, and with [refresh] (pull-to-refresh) also asks
+  /// the server for anything newer.
+  Future<void> loadTasks(String userId, {bool refresh = false}) async {
     state = state.copyWith(isLoading: true, error: null);
     await _readLocal(userId);
 
@@ -159,7 +176,38 @@ class TaskViewModel extends Notifier<TaskListState> {
     if (auth.status != AuthStatus.authenticated || auth.user?.id != userId) {
       return;
     }
+    // Local-first: every screen reads the device's copy, which is already
+    // current for anything done on this phone. The server is asked only when
+    // it can know something the phone does not — a pull-to-refresh, a device
+    // with nothing on it yet, or a few hours since it was last asked. Asking
+    // on every load cost a round trip per screen, and raced the uploads of
+    // changes just made here.
+    final due = refresh ||
+        state.tasks.isEmpty ||
+        pullDue(_lastPull(userId), DateTime.now());
+    if (!due) return;
     if (await _pullFromServer(userId)) await _readLocal(userId);
+  }
+
+  static String _pullKey(String userId) => 'tasks_last_pull_$userId';
+
+  DateTime? _lastPull(String userId) {
+    try {
+      final ms = ref.read(sharedPrefsProvider).getInt(_pullKey(userId));
+      return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _savePullTime(String userId) {
+    try {
+      ref
+          .read(sharedPrefsProvider)
+          .setInt(_pullKey(userId), DateTime.now().millisecondsSinceEpoch);
+    } catch (_) {
+      // Worst case the next load asks the server again.
+    }
   }
 
   /// A pull already under way, shared by every caller: Home and Tasks both
@@ -175,6 +223,7 @@ class TaskViewModel extends Notifier<TaskListState> {
     final series =
         await ref.read(taskSeriesRepositoryProvider).pullFromServer(userId);
     final tasks = await ref.read(taskRepositoryProvider).pullFromServer(userId);
+    if (series.isRight() && tasks.isRight()) _savePullTime(userId);
     return series.getOrElse((_) => false) | tasks.getOrElse((_) => false);
   }
 

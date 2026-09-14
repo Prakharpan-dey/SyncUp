@@ -92,15 +92,29 @@ void main() {
 
   group('completed tasks in the lists', () {
     /// They used to stay listed forever.
-    test('stay listed for a day after being ticked, newest first', () {
+    /// A rolling 24 hours kept last night's ticks on today's list.
+    test('only show what was ticked today, newest first', () {
+      final at = today.add(const Duration(hours: 9));
       final state = TaskListState(tasks: [
-        task(id: 'stale', completedAt: now.subtract(const Duration(hours: 25))),
-        task(id: 'older', completedAt: now.subtract(const Duration(hours: 5))),
-        task(id: 'fresh', completedAt: now.subtract(const Duration(hours: 1))),
+        task(id: 'lastNight', completedAt: today.subtract(const Duration(minutes: 30))),
+        task(id: 'older', completedAt: today.add(const Duration(hours: 7))),
+        task(id: 'fresh', completedAt: today.add(const Duration(hours: 8))),
       ]);
 
-      expect(state.recentlyCompleted(now: now).map((t) => t.id), ['fresh', 'older']);
+      expect(state.completedToday(now: at).map((t) => t.id), ['fresh', 'older']);
       expect(state.completedCount, 3, reason: 'history still has all of them');
+    });
+
+    test('an overdue task from weeks ago still shows', () {
+      final state = TaskListState(tasks: [
+        task(id: 'old', dueDate: today.subtract(const Duration(days: 21))),
+        task(id: 'doneLongAgo',
+            dueDate: today.subtract(const Duration(days: 21)),
+            completedAt: yesterday),
+      ]);
+
+      expect(state.visiblePending().map((t) => t.id), ['old']);
+      expect(state.completedToday(), isEmpty);
     });
   });
 }

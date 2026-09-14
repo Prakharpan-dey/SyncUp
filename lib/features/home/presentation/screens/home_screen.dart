@@ -115,15 +115,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         .where((t) => t.dueAt == null || !t.dueAt!.isAfter(endOfToday))
         .toList()
       ..sort(_byDueThenCreated);
-    // Finished in the last 24 hours only — older ones stay in history.
-    final completedTasks = taskState.recentlyCompleted();
+    // Finished today only — earlier days stay in history.
+    final completedTasks = taskState.completedToday();
 
     return Scaffold(
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
             final userId = ref.read(currentUserIdProvider);
-            await ref.read(taskViewModelProvider.notifier).loadTasks(userId);
+            await ref
+                .read(taskViewModelProvider.notifier)
+                .loadTasks(userId, refresh: true);
             await ref
                 .read(attendanceViewModelProvider.notifier)
                 .loadSubjects(userId);

@@ -172,8 +172,8 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     // ObjectBox insertion order, as a full TaskCard each — a daily habit adds
     // 365 of them a year and the section became the whole screen. The rows all
     // still exist; only what is drawn is capped.
-    // Only what was finished in the last 24 hours; older ones stay in history.
-    final completedTasks = taskState.recentlyCompleted();
+    // Only what was finished today; earlier days stay in history.
+    final completedTasks = taskState.completedToday();
     final shownCompleted = completedTasks.take(kCompletedShown).toList();
     final hiddenCompleted = completedTasks.length - shownCompleted.length;
 
@@ -200,7 +200,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     return RefreshIndicator(
       onRefresh: () => ref
           .read(taskViewModelProvider.notifier)
-          .loadTasks(ref.read(currentUserIdProvider)),
+          .loadTasks(ref.read(currentUserIdProvider), refresh: true),
       child: ListView(
         padding: const EdgeInsets.only(top: 8, bottom: 100),
         children: [
@@ -251,7 +251,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
                 child: Text(
-                  '+$hiddenCompleted older completed',
+                  '+$hiddenCompleted more completed today',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: isDark
                             ? AppColors.textSecondaryDark

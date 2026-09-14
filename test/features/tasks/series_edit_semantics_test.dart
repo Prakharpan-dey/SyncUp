@@ -102,7 +102,7 @@ class _SeededViewModel extends TaskViewModel {
   TaskListState build() => TaskListState(tasks: _seed);
 
   @override
-  Future<void> loadTasks(String userId) async {}
+  Future<void> loadTasks(String userId, {bool refresh = false}) async {}
 }
 
 void main() {

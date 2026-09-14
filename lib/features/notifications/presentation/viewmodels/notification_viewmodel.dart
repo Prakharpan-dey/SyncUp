@@ -81,20 +81,6 @@ class NotificationViewModel extends Notifier<NotificationState> {
     );
   }
 
-  Future<void> markAllAsRead() async {
-    await _addIds(_kLocalReadKey, _localIds(state.notifications));
-
-    final result =
-        await ref.read(notificationRepositoryProvider).markAllAsRead();
-    result.fold(
-      (f) {
-        _markRead((n) => n.id.startsWith(_kLocalPrefix));
-        state = state.copyWith(error: f.message);
-      },
-      (_) => _markRead((_) => true),
-    );
-  }
-
   /// Swiped away: gone for good, here and on the server.
   ///
   /// Swiping used to only mark it read. The card slid off, but the
@@ -119,7 +105,10 @@ class NotificationViewModel extends Notifier<NotificationState> {
     );
   }
 
-  /// Empties the list, here and on the server.
+  /// READ ALL: empties the list, here and on the server.
+  ///
+  /// It used to mark everything read and keep it, so the whole list was
+  /// still there, dimmed, every time the screen opened.
   Future<void> clearAll() async {
     final all = state.notifications;
     await _addIds(_kLocalDismissedKey, _localIds(all));

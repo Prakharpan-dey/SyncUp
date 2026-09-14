@@ -48,21 +48,15 @@ class _NotificationCentreScreenState
             : BackButton(onPressed: () => context.go('/profile')),
         title: const Text('NOTIFICATIONS'),
         actions: [
-          if (state.unreadCount > 0)
+          // Read means done with it: the list empties rather than keeping
+          // every notification dimmed forever.
+          if (state.notifications.isNotEmpty)
             TextButton.icon(
               onPressed: () {
-                ref
-                    .read(notificationViewModelProvider.notifier)
-                    .markAllAsRead();
+                ref.read(notificationViewModelProvider.notifier).clearAll();
               },
               icon: const Icon(Icons.done_all_rounded, size: 18),
               label: const Text('READ ALL'),
-            ),
-          if (state.notifications.isNotEmpty)
-            IconButton(
-              tooltip: 'Clear all',
-              icon: const Icon(Icons.delete_sweep_rounded),
-              onPressed: () => _confirmClearAll(context),
             ),
         ],
       ),
@@ -114,29 +108,6 @@ class _NotificationCentreScreenState
                 ),
             ),
     );
-  }
-
-  Future<void> _confirmClearAll(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Clear all notifications?'),
-        content: const Text('They will be removed for good.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('CANCEL'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('CLEAR'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true) {
-      await ref.read(notificationViewModelProvider.notifier).clearAll();
-    }
   }
 
   Widget _buildEmptyState(BuildContext context, bool isDark) {

@@ -121,6 +121,12 @@ class TaskRepositoryImpl implements TaskRepository {
   /// yet. A pull leaves them alone, exactly like queued ones.
   final _inFlight = <String>{};
 
+  /// Pending days of a deleted repeating task, removed here with no upload of
+  /// their own: the server drops them when the series delete lands. Until it
+  /// has, a pull would find them still on the server and bring them back —
+  /// the repeating task looked impossible to delete.
+  final _removedLocally = <String>{};
+
   // interface methods 
 
   @override
@@ -286,6 +292,7 @@ class TaskRepositoryImpl implements TaskRepository {
           completed.add(row);
         } else {
           pending.add(row.obId);
+          _removedLocally.add(row.id);
         }
       }
       _box.removeMany(pending);
@@ -334,8 +341,15 @@ class TaskRepositoryImpl implements TaskRepository {
             (id: o.id, isSynced: o.isSynced, updatedAt: o.updatedAt),
         ],
         remote: [for (final t in remote) (id: t.id, updatedAt: t.updatedAt)],
-        queued: {..._syncManager.queuedEntityIds('task'), ..._inFlight},
+        queued: {
+          ..._syncManager.queuedEntityIds('task'),
+          ..._inFlight,
+          ..._removedLocally,
+        },
       );
+      // Gone from the server too: nothing left to guard against.
+      final remoteIds = {for (final t in remote) t.id};
+      _removedLocally.removeWhere((id) => !remoteIds.contains(id));
       if (plan.take.isEmpty && plan.remove.isEmpty) return const Right(false);
 
       final taken = remote.where((t) => plan.take.contains(t.id)).toList();
