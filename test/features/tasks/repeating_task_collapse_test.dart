@@ -51,16 +51,16 @@ void main() {
       expect(visible.single.id, 'o0');
     });
 
-    test('the row shown is the soonest one still ahead', () {
-      // Deliberately out of order: generation writes in date order, but state
-      // is rebuilt from ObjectBox and from optimistic inserts at the head.
+    /// A repeating task shows on its days only: later days never sit in
+    /// UPCOMING, whatever order the rows arrive in.
+    test('nothing ahead of today is shown', () {
       final visible = TaskListState(tasks: [
         occurrence(id: 'friday', seriesId: 's1', dueDate: day(4)),
         occurrence(id: 'tomorrow', seriesId: 's1', dueDate: day(1)),
         occurrence(id: 'thursday', seriesId: 's1', dueDate: day(3)),
       ]).visiblePending(now: now);
 
-      expect(visible.single.id, 'tomorrow');
+      expect(visible, isEmpty);
     });
 
     test('two separate series each keep their own row', () {
@@ -101,13 +101,18 @@ void main() {
       );
     });
 
-    test('a weekly task with nothing due today still shows its next day', () {
-      final visible = TaskListState(tasks: [
+    /// Custom days: it used to sit in UPCOMING on its days off.
+    test('a custom-day task shows nothing on its days off, then shows on its day', () {
+      final state = TaskListState(tasks: [
         occurrence(id: 'nextMon', seriesId: 's1', dueDate: day(5)),
         occurrence(id: 'monAfter', seriesId: 's1', dueDate: day(12)),
-      ]).visiblePending(now: now);
+      ]);
 
-      expect(visible.single.id, 'nextMon');
+      expect(state.visiblePending(now: now), isEmpty);
+      expect(
+        state.visiblePending(now: DateTime(2026, 9, 10, 9)).single.id,
+        'nextMon',
+      );
     });
   });
 

@@ -165,9 +165,8 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
   }
 
   Widget _buildTaskList(TaskListState taskState, bool isDark) {
-    // Collapsed, not filtered: a repeating series contributes the single
-    // occurrence it is next due on, so one daily habit is one row rather than
-    // the fortnight of rows generation has already materialized.
+    // A repeating series contributes only today's occurrence (and any missed
+    // days), so one daily habit is one row, not a fortnight of them.
     final pendingTasks = taskState.visiblePending();
     // Newest first and bounded. This rendered every task ever ticked, in
     // ObjectBox insertion order, as a full TaskCard each — a daily habit adds

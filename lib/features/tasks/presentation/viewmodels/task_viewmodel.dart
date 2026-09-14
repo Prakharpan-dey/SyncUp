@@ -76,8 +76,8 @@ class TaskListState {
           .compareTo(a.completedAt ?? a.updatedAt));
   }
 
-  /// The pending tasks worth drawing, with each repeating series collapsed to
-  /// the one occurrence it is next due on.
+  /// The pending tasks worth drawing. A repeating series shows only its
+  /// occurrence due today (plus any missed days) — never a later one.
   ///
   /// Generation materializes a fortnight ahead so reminders can be scheduled
   /// offline and the streak has real rows to count — but that is storage, not
@@ -89,21 +89,7 @@ class TaskListState {
   /// folding them away would put rows beyond the reach of ticking or deleting.
   List<Task> visiblePending({DateTime? now}) {
     final at = now ?? DateTime.now();
-    final startOfToday = DateTime(at.year, at.month, at.day);
     final startOfTomorrow = DateTime(at.year, at.month, at.day + 1);
-
-    // Series with an occurrence on today's date, done or not. A repeating task
-    // shows on its day only: once today's is ticked, tomorrow's waits for
-    // tomorrow instead of jumping straight into UPCOMING. A series with
-    // nothing today (a weekly task on another day) still shows its next one.
-    final hasToday = <String>{
-      for (final t in tasks)
-        if (t.seriesId != null &&
-            t.dueDate != null &&
-            !t.dueDate!.isBefore(startOfToday) &&
-            t.dueDate!.isBefore(startOfTomorrow))
-          t.seriesId!,
-    };
 
     final soonestOfSeries = <String, Task>{};
     final rest = <Task>[];
@@ -118,12 +104,10 @@ class TaskListState {
         continue;
       }
 
-      // A later day of a series that already has one today.
-      if (hasToday.contains(seriesId) &&
-          due != null &&
-          !due.isBefore(startOfTomorrow)) {
-        continue;
-      }
+      // A repeating task shows on its days only. A later day never sits in
+      // UPCOMING — not after today's is done (daily), and not on a day that
+      // is not one of its days at all (custom days).
+      if (due != null && !due.isBefore(startOfTomorrow)) continue;
 
       final incumbent = soonestOfSeries[seriesId];
       if (incumbent == null || _isSooner(due, incumbent.dueAt)) {

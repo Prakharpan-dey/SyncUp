@@ -22,7 +22,8 @@ class _TaskCreateScreenState extends ConsumerState<TaskCreateScreen> {
   final _titleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   TaskPriority _priority = TaskPriority.medium;
-  DateTime? _dueDate;
+  // A one-off task gets a deadline of today unless the user moves it.
+  DateTime? _dueDate = DateUtils.dateOnly(DateTime.now());
   int? _dueMinutes;
   RepeatMode _repeat = RepeatMode.never;
   bool _keepPrivate = false;
@@ -171,7 +172,7 @@ class _TaskCreateScreenState extends ConsumerState<TaskCreateScreen> {
                   onTap: isLoading ? null : _pickDate,
                   child: InputDecorator(
                     decoration: const InputDecoration(
-                      labelText: 'Due Date (optional)',
+                      labelText: 'Due Date',
                       prefixIcon: Icon(Icons.calendar_today_rounded),
                     ),
                     child: Text(
