@@ -56,6 +56,21 @@ class SocialRemoteDataSource {
     await _dio.post('/users/block', data: data);
   }
 
+  Future<void> unblockUser(String userId) async {
+    await _dio.delete('/friends/block/$userId');
+  }
+
+  Future<List<Map<String, dynamic>>> getBlockedUsers() async {
+    final res = await _dio.get('/friends/blocked');
+    return _list(res.data);
+  }
+
+  // Reports
+
+  Future<void> report(Map<String, dynamic> data) async {
+    await _dio.post('/reports', data: data);
+  }
+
   // Groups
 
   Future<List<Map<String, dynamic>>> getGroups(String userId) async {

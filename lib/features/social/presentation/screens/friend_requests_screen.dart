@@ -7,6 +7,7 @@ import '../../../../core/widgets/user_avatar.dart';
 import '../../domain/entities/friendship.dart';
 import '../../../notifications/di/notification_providers.dart';
 import '../viewmodels/social_viewmodel.dart';
+import '../widgets/user_safety_actions.dart';
 
 class FriendRequestsScreen extends ConsumerStatefulWidget {
   const FriendRequestsScreen({super.key});
@@ -135,6 +136,12 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen>
                                 requestId: request.id,
                                 response: FriendshipStatus.rejected,
                               ),
+                          onMore: () => showUserSafetySheet(
+                            context,
+                            ref,
+                            userId: request.requesterId,
+                            name: request.requesterName ?? 'this person',
+                          ),
                         );
                       },
                     )),
@@ -196,6 +203,16 @@ class _FriendRequestsScreenState extends ConsumerState<FriendRequestsScreen>
                                   ],
                                 ),
                               ),
+                              IconButton(
+                                onPressed: () => showUserSafetySheet(
+                                  context,
+                                  ref,
+                                  userId: friend.id,
+                                  name: friend.displayName,
+                                ),
+                                icon: const Icon(Icons.more_vert_rounded),
+                                tooltip: 'Report or block',
+                              ),
                             ],
                           ),
                         );
@@ -248,11 +265,13 @@ class _RequestCard extends StatelessWidget {
   final Friendship request;
   final VoidCallback onAccept;
   final VoidCallback onReject;
+  final VoidCallback onMore;
 
   const _RequestCard({
     required this.request,
     required this.onAccept,
     required this.onReject,
+    required this.onMore,
   });
 
   @override
@@ -306,6 +325,12 @@ class _RequestCard extends StatelessWidget {
               child: const Icon(Icons.close_rounded,
                   size: 20, color: Colors.black),
             ),
+          ),
+          IconButton(
+            onPressed: onMore,
+            icon: const Icon(Icons.more_vert_rounded),
+            tooltip: 'Report or block',
+            visualDensity: VisualDensity.compact,
           ),
         ],
       ),

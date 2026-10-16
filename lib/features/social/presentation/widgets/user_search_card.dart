@@ -12,12 +12,16 @@ class UserSearchCard extends StatelessWidget {
   final VoidCallback? onRespond;
   final bool requestSent;
 
+  /// Opens report/block. Null hides the button.
+  final VoidCallback? onMore;
+
   const UserSearchCard({
     super.key,
     required this.user,
     this.onAddFriend,
     this.onRespond,
     this.requestSent = false,
+    this.onMore,
   });
 
   @override
@@ -80,6 +84,13 @@ class UserSearchCard extends StatelessWidget {
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
                 textStyle: const TextStyle(fontSize: 12),
               ),
+            ),
+          if (onMore != null)
+            IconButton(
+              onPressed: onMore,
+              icon: const Icon(Icons.more_vert_rounded),
+              tooltip: 'Report or block',
+              visualDensity: VisualDensity.compact,
             ),
         ],
       ),

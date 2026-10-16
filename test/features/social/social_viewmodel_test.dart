@@ -9,6 +9,7 @@ import 'package:syncup/features/social/domain/entities/friendship.dart';
 import 'package:syncup/features/social/domain/entities/group.dart';
 import 'package:syncup/features/social/domain/entities/group_invite.dart';
 import 'package:syncup/features/social/domain/entities/group_member.dart';
+import 'package:syncup/features/social/domain/entities/report_reason.dart';
 import 'package:syncup/features/social/domain/entities/user_summary.dart';
 import 'package:syncup/features/social/domain/repositories/social_repository.dart';
 import 'package:syncup/features/social/presentation/viewmodels/social_viewmodel.dart';
@@ -236,6 +237,85 @@ void main() {
       expect(result.ok, isFalse);
       expect(result.message, 'No SyncUp account with that email');
       expect(state().error, isNull);
+    });
+  });
+
+  group('blocking', () {
+    Future<void> loadFriends() async {
+      when(() => repo.getFriends(any())).thenAnswer((_) async => Right([
+            friend(memberA, 'Rhea'),
+            friend(memberB, 'Arjun'),
+          ]));
+      await vm().loadFriends(owner);
+    }
+
+    test('drops the blocked person from friends at once', () async {
+      await loadFriends();
+      when(() => repo.blockUser(userId: owner, blockedUserId: memberA))
+          .thenAnswer((_) async => const Right(null));
+
+      final ok = await vm().blockUser(memberA);
+
+      expect(ok, isTrue);
+      expect(state().friends.map((f) => f.id), [memberB]);
+      expect(state().error, isNull);
+    });
+
+    test('keeps everything and reports the failure', () async {
+      await loadFriends();
+      when(() => repo.blockUser(userId: owner, blockedUserId: memberA))
+          .thenAnswer((_) async => const Left(NetworkFailure('Offline')));
+
+      final ok = await vm().blockUser(memberA);
+
+      expect(ok, isFalse);
+      expect(state().friends, hasLength(2));
+      expect(state().error, 'Offline');
+    });
+
+    test('unblocking removes them from the blocked list', () async {
+      when(() => repo.getBlockedUsers()).thenAnswer(
+          (_) async => Right([friend(memberA, 'Rhea'), friend(memberB, 'Arjun')]));
+      await vm().loadBlockedUsers();
+      when(() => repo.unblockUser(memberA))
+          .thenAnswer((_) async => const Right(null));
+
+      expect(await vm().unblockUser(memberA), isTrue);
+      expect(state().blockedUsers.map((u) => u.id), [memberB]);
+    });
+  });
+
+  group('reporting', () {
+    test('sends the post, reason and note', () async {
+      when(() => repo.report(
+            userId: memberA,
+            feedItemId: 'post-1',
+            reason: ReportReason.harassment,
+            details: 'rude',
+          )).thenAnswer((_) async => const Right(null));
+
+      final ok = await vm().report(
+        userId: memberA,
+        feedItemId: 'post-1',
+        reason: ReportReason.harassment,
+        details: 'rude',
+      );
+
+      expect(ok, isTrue);
+      expect(state().error, isNull);
+    });
+
+    test('surfaces a failure', () async {
+      when(() => repo.report(
+            userId: memberA,
+            reason: ReportReason.spam,
+          )).thenAnswer((_) async =>
+          const Left(ServerFailure('Too many requests', statusCode: 429)));
+
+      final ok = await vm().report(userId: memberA, reason: ReportReason.spam);
+
+      expect(ok, isFalse);
+      expect(state().error, 'Too many requests');
     });
   });
 }

@@ -9,6 +9,7 @@ import '../../domain/entities/user_summary.dart';
 import '../../../notifications/di/notification_providers.dart';
 import '../../../../core/widgets/app_snack_bar.dart';
 import '../widgets/user_search_card.dart';
+import '../widgets/user_safety_actions.dart';
 
 class SearchUsersScreen extends ConsumerStatefulWidget {
   const SearchUsersScreen({super.key});
@@ -182,6 +183,12 @@ class _SearchUsersScreenState extends ConsumerState<SearchUsersScreen> {
                             // They already asked you: answer it where
                             // requests live rather than sending a second.
                             onRespond: () => context.go('/feed/friends'),
+                            onMore: () => showUserSafetySheet(
+                              context,
+                              ref,
+                              userId: user.id,
+                              name: user.displayName,
+                            ),
                           );
                         },
                       ),

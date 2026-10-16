@@ -142,4 +142,22 @@ void main() {
       expect(find.byIcon(Icons.chat_bubble_outline_rounded), findsNothing);
     });
   });
+
+  group('report and block', () {
+    testWidgets('offers the menu on a post by someone else', (tester) async {
+      var opened = 0;
+      await pumpApp(tester, FeedItemCard(item: item(), onMore: () => opened++));
+
+      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.pump();
+
+      expect(opened, 1);
+    });
+
+    // The feed passes no onMore for your own posts.
+    testWidgets('shows no menu without a handler', (tester) async {
+      await pumpApp(tester, FeedItemCard(item: item()));
+      expect(find.byIcon(Icons.more_vert_rounded), findsNothing);
+    });
+  });
 }

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/neo_brutalism.dart';
+import '../../../../core/auth/current_user.dart';
+import '../../../social/presentation/widgets/user_safety_actions.dart';
 import '../viewmodels/feed_viewmodel.dart';
 import '../widgets/feed_item_card.dart';
 
@@ -170,9 +172,21 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                             }
 
                             final item = state.items[index];
+                            final isMine =
+                                item.actorId == ref.read(currentUserIdProvider);
                             return FeedItemCard(
                               item: item,
                               onReact: () => vm.reactToItem(item.id, '❤️'),
+                              // Your own posts have nothing to report or block.
+                              onMore: isMine
+                                  ? null
+                                  : () => showUserSafetySheet(
+                                        context,
+                                        ref,
+                                        userId: item.actorId,
+                                        name: item.actorName,
+                                        feedItemId: item.id,
+                                      ),
                             );
                           },
                         ),

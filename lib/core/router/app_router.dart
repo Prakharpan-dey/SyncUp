@@ -33,6 +33,7 @@ import '../../features/profile/presentation/screens/notification_preferences_scr
 import '../../features/profile/presentation/screens/change_password_screen.dart';
 import '../../features/profile/presentation/screens/delete_account_screen.dart';
 import '../../features/profile/presentation/screens/devices_screen.dart';
+import '../../features/profile/presentation/screens/blocked_users_screen.dart';
 import '../theme/app_colors.dart';
 import '../theme/neo_brutalism.dart';
 import '../widgets/offline_banner.dart';
@@ -67,6 +68,7 @@ const _accountOnlyPrefixes = [
   '/profile/delete-account',
   '/profile/change-password',
   '/profile/devices',
+  '/profile/blocked',
 ];
 
 bool _requiresAccount(String location) =>
@@ -373,6 +375,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     path: 'devices',
                     name: RouteNames.devices,
                     builder: (ctx, state) => const DevicesScreen(),
+                  ),
+                  GoRoute(
+                    path: 'blocked',
+                    name: RouteNames.blockedUsers,
+                    builder: (ctx, state) => const BlockedUsersScreen(),
                   ),
                   GoRoute(
                     path: 'delete-account',

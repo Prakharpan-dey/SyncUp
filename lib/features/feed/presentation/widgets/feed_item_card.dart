@@ -8,10 +8,15 @@ class FeedItemCard extends StatelessWidget {
   final FeedItem item;
   final VoidCallback? onReact;
 
+  /// Opens report/block for the poster. Null hides the button, as on your own
+  /// posts.
+  final VoidCallback? onMore;
+
   const FeedItemCard({
     super.key,
     required this.item,
     this.onReact,
+    this.onMore,
   });
 
   IconData get _typeIcon {
@@ -103,6 +108,16 @@ class FeedItemCard extends StatelessWidget {
                 ),
                 child: Icon(_typeIcon, size: 16, color: Colors.black),
               ),
+              if (onMore != null)
+                IconButton(
+                  onPressed: onMore,
+                  icon: const Icon(Icons.more_vert_rounded),
+                  tooltip: 'More',
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints:
+                      const BoxConstraints(minWidth: 36, minHeight: 36),
+                ),
             ],
           ),
           const SizedBox(height: 12),

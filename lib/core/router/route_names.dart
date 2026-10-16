@@ -6,6 +6,7 @@ class RouteNames {
   static const resetPassword = 'reset-password';
   static const changePassword = 'change-password';
   static const devices = 'devices';
+  static const blockedUsers = 'blocked-users';
   static const onboarding = 'onboarding';
   static const displayName = 'display-name';
   static const privacySetup = 'privacy-setup';

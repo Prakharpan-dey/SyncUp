@@ -126,6 +126,13 @@ class ProfileScreen extends ConsumerWidget {
               onTap: () => context.go('/profile/privacy'),
             ),
             _SettingsTile(
+              icon: Icons.block,
+              iconColor: AppColors.error,
+              title: 'Blocked users',
+              subtitle: 'People you have blocked, and unblocking them',
+              onTap: () => context.go('/profile/blocked'),
+            ),
+            _SettingsTile(
               icon: Icons.notifications_rounded,
               iconColor: AppColors.primary,
               title: 'Notification Preferences',

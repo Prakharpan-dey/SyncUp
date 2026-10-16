@@ -7,6 +7,7 @@ import '../../domain/entities/group.dart';
 import '../../domain/entities/group_invite.dart';
 import '../../domain/entities/group_join_request.dart';
 import '../../domain/entities/group_member.dart';
+import '../../domain/entities/report_reason.dart';
 import '../../domain/entities/user_summary.dart';
 import '../../domain/repositories/social_repository.dart';
 import '../datasources/social_remote_datasource.dart';
@@ -165,6 +166,56 @@ class SocialRepositoryImpl implements SocialRepository {
         // `user_id` is the person being blocked — the API takes the blocker
         // from the auth token. Sending our own id asked it to block ourselves.
         'user_id': blockedUserId,
+      });
+      return const Right(null);
+    } catch (e) {
+      return Left(_mapError(e));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> unblockUser(String userId) async {
+    final guard = _offlineGuard();
+    if (guard != null) return guard;
+    try {
+      await _remote.unblockUser(userId);
+      return const Right(null);
+    } catch (e) {
+      return Left(_mapError(e));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<UserSummary>>> getBlockedUsers() async {
+    final guard = _offlineGuard();
+    if (guard != null) return guard;
+    try {
+      final data = await _remote.getBlockedUsers();
+      return Right(
+          data.map((j) => UserSummaryDto.fromJson(j).toDomain()).toList());
+    } catch (e) {
+      return Left(_mapError(e));
+    }
+  }
+
+  // Reports
+
+  @override
+  Future<Either<Failure, void>> report({
+    required String userId,
+    String? feedItemId,
+    required ReportReason reason,
+    String? details,
+  }) async {
+    final guard = _offlineGuard();
+    if (guard != null) return guard;
+    try {
+      final note = details?.trim();
+      await _remote.report({
+        'user_id': userId,
+        'feed_item_id': ?feedItemId,
+        'reason': reason.apiValue,
+        if (note != null && note.isNotEmpty) 'details': note,
       });
       return const Right(null);
     } catch (e) {

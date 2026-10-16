@@ -5,8 +5,10 @@ import '../../domain/entities/group.dart';
 import '../../domain/entities/group_invite.dart';
 import '../../domain/entities/group_join_request.dart';
 import '../../domain/entities/group_member.dart';
+import '../../domain/entities/report_reason.dart';
 import '../../domain/entities/user_summary.dart';
 import '../../di/social_providers.dart';
+import '../../../feed/presentation/viewmodels/feed_viewmodel.dart';
 
 class SocialState {
   final List<UserSummary> searchResults;
@@ -24,6 +26,9 @@ class SocialState {
 
   /// Invites waiting on the current user, from any group.
   final List<GroupInvite> myInvites;
+
+  /// People the current user has blocked, for the Blocked users screen.
+  final List<UserSummary> blockedUsers;
   final bool isLoading;
   final String? error;
 
@@ -37,6 +42,7 @@ class SocialState {
     this.joinRequests = const [],
     this.sentInvites = const [],
     this.myInvites = const [],
+    this.blockedUsers = const [],
     this.isLoading = false,
     this.error,
   });
@@ -51,6 +57,7 @@ class SocialState {
     List<GroupJoinRequest>? joinRequests,
     List<SentGroupInvite>? sentInvites,
     List<GroupInvite>? myInvites,
+    List<UserSummary>? blockedUsers,
     bool? isLoading,
     String? error,
   }) =>
@@ -64,6 +71,7 @@ class SocialState {
         joinRequests: joinRequests ?? this.joinRequests,
         sentInvites: sentInvites ?? this.sentInvites,
         myInvites: myInvites ?? this.myInvites,
+        blockedUsers: blockedUsers ?? this.blockedUsers,
         isLoading: isLoading ?? this.isLoading,
         error: error,
       );
@@ -182,6 +190,86 @@ class SocialViewModel extends Notifier<SocialState> {
               state.friends.where((f) => f.id != friendUserId).toList(),
         );
       },
+    );
+  }
+
+  // Blocking and reporting
+
+  /// Blocks [userId]. The server ends any friendship or pending request, so
+  /// they leave those lists here at once, and their posts leave the feed.
+  /// Returns whether it worked; the reason is in [SocialState.error].
+  Future<bool> blockUser(String userId) async {
+    state = state.copyWith(error: null);
+    final result = await ref
+        .read(socialRepositoryProvider)
+        .blockUser(userId: ref.read(currentUserIdProvider), blockedUserId: userId);
+    return result.fold(
+      (f) {
+        state = state.copyWith(error: f.message);
+        return false;
+      },
+      (_) {
+        state = state.copyWith(
+          friends: state.friends.where((u) => u.id != userId).toList(),
+          pendingRequests: state.pendingRequests
+              .where((r) => r.requesterId != userId && r.receiverId != userId)
+              .toList(),
+          searchResults:
+              state.searchResults.where((u) => u.id != userId).toList(),
+        );
+        ref.read(feedViewModelProvider.notifier).hideActor(userId);
+        return true;
+      },
+    );
+  }
+
+  Future<void> loadBlockedUsers() async {
+    state = state.copyWith(isLoading: true, error: null);
+    final result = await ref.read(socialRepositoryProvider).getBlockedUsers();
+    result.fold(
+      (f) => state = state.copyWith(isLoading: false, error: f.message),
+      (users) => state = state.copyWith(isLoading: false, blockedUsers: users),
+    );
+  }
+
+  Future<bool> unblockUser(String userId) async {
+    state = state.copyWith(error: null);
+    final result = await ref.read(socialRepositoryProvider).unblockUser(userId);
+    return result.fold(
+      (f) {
+        state = state.copyWith(error: f.message);
+        return false;
+      },
+      (_) {
+        state = state.copyWith(
+          blockedUsers:
+              state.blockedUsers.where((u) => u.id != userId).toList(),
+        );
+        return true;
+      },
+    );
+  }
+
+  /// Reports [userId], or one of their posts when [feedItemId] is given.
+  Future<bool> report({
+    required String userId,
+    String? feedItemId,
+    required ReportReason reason,
+    String? details,
+  }) async {
+    state = state.copyWith(error: null);
+    final result = await ref.read(socialRepositoryProvider).report(
+          userId: userId,
+          feedItemId: feedItemId,
+          reason: reason,
+          details: details,
+        );
+    return result.fold(
+      (f) {
+        state = state.copyWith(error: f.message);
+        return false;
+      },
+      (_) => true,
     );
   }
 

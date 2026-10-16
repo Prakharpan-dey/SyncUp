@@ -129,6 +129,15 @@ class FeedViewModel extends Notifier<FeedState> {
       },
     );
   }
+
+  /// Drops everything [userId] posted, after they are blocked. The server
+  /// already leaves them out of later pages; this clears what is on screen.
+  void hideActor(String userId) {
+    state = state.copyWith(
+      items: state.items.where((item) => item.actorId != userId).toList(),
+      cursor: state.cursor,
+    );
+  }
 }
 
 final feedViewModelProvider =

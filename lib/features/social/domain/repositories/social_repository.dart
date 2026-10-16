@@ -5,6 +5,7 @@ import '../entities/group.dart';
 import '../entities/group_invite.dart';
 import '../entities/group_join_request.dart';
 import '../entities/group_member.dart';
+import '../entities/report_reason.dart';
 import '../entities/user_summary.dart';
 
 abstract interface class SocialRepository {
@@ -26,6 +27,17 @@ abstract interface class SocialRepository {
   Future<Either<Failure, void>> blockUser({
     required String userId,
     required String blockedUserId,
+  });
+  Future<Either<Failure, void>> unblockUser(String userId);
+  Future<Either<Failure, List<UserSummary>>> getBlockedUsers();
+
+  // Reports
+  /// Reports [userId], or one of their posts when [feedItemId] is given.
+  Future<Either<Failure, void>> report({
+    required String userId,
+    String? feedItemId,
+    required ReportReason reason,
+    String? details,
   });
 
   // Groups

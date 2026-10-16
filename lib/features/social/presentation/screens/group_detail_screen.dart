@@ -8,6 +8,7 @@ import '../../../../core/theme/neo_brutalism.dart';
 import '../../../../core/widgets/user_avatar.dart';
 import '../../domain/entities/group_invite.dart';
 import '../viewmodels/social_viewmodel.dart';
+import '../widgets/user_safety_actions.dart';
 import '../widgets/add_members_sheet.dart';
 import '../../../../core/widgets/app_snack_bar.dart';
 
@@ -470,6 +471,17 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                           tooltip: 'Remove from group',
                           onPressed: () => _confirmRemove(
                               member.userId, member.displayName),
+                        ),
+                      if (member.userId != currentUserId)
+                        IconButton(
+                          icon: const Icon(Icons.more_vert_rounded, size: 20),
+                          tooltip: 'Report or block',
+                          onPressed: () => showUserSafetySheet(
+                            context,
+                            ref,
+                            userId: member.userId,
+                            name: member.displayName,
+                          ),
                         ),
                     ],
                   ),
