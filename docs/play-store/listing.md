@@ -55,12 +55,12 @@ Light and dark themes included. No ads.
 |---|---|
 | App icon 512×512 | `icon-512.png` |
 | Feature graphic 1024×500 | `feature-graphic.png` |
-| Phone screenshots (2–8) | `screenshots/` (to be captured from the 1.0.1 build) |
+| Phone screenshots (8) | `screenshots/1-home.png` … `8-profile.png`, 1080×1920. The `raw/` captures are 1344×2992, taller than Play's 2:1 limit, so upload the framed ones |
 | Promo video | YouTube link to `syncup-launch-video/out/syncup-launch.mp4` (optional) |
 
 **Category:** Productivity. **Tags:** Productivity, Education, To-do list.
 
-**Contact:** the new support email (also set as `REPORTS_EMAIL` on Railway). Website optional.
+**Contact:** privacy@zeusdotdev.app (also `REPORTS_EMAIL` on Railway, and the address on the privacy policy). Website optional.
 
 ## App content
 
@@ -115,5 +115,6 @@ First test build. Plan tasks, track attendance, keep your streak and share your 
 ```
 • Report or block anyone from the ⋮ menu on their post, in your friends list or in a group
 • Profile → Blocked users to see and undo blocks
+• Attendance now syncs to your account, so it's there after a reinstall or on a new phone
 • New look: the SyncUp logo and a fresh cobalt-and-lime theme
 ```

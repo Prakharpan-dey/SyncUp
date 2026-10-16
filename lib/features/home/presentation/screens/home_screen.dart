@@ -128,7 +128,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 .loadTasks(userId, refresh: true);
             await ref
                 .read(attendanceViewModelProvider.notifier)
-                .loadSubjects(userId);
+                .loadSubjects(userId, refresh: true);
           },
           child: CustomScrollView(
             slivers: [

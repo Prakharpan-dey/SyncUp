@@ -4,6 +4,7 @@ import 'package:syncup/core/storage/models/subject_ob.dart';
 import 'package:syncup/core/storage/models/attendance_session_ob.dart';
 import 'package:syncup/core/storage/object_box_store.dart';
 import 'package:syncup/core/sync/connectivity_service.dart';
+import 'package:syncup/core/sync/pull_merge.dart';
 import 'package:syncup/core/sync/sync_manager.dart';
 import 'package:syncup/features/attendance/data/datasources/attendance_remote_datasource.dart';
 import 'package:syncup/features/attendance/data/models/subject_dto.dart';
@@ -279,6 +280,145 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
       return const Right(null);
     } catch (e) {
       return Left(CacheFailure(e.toString()));
+    }
+  }
+
+  // ─── Pull ───
+
+  List<SubjectOB> _localSubjects(String userId) {
+    final q = _subjectBox.query(SubjectOB_.userId.equals(userId)).build();
+    final all = q.find();
+    q.close();
+    return all;
+  }
+
+  List<AttendanceSessionOB> _localSessionsFor(Iterable<String> subjectIds) {
+    final ids = subjectIds.toList();
+    if (ids.isEmpty) return const [];
+    final q = _sessionBox
+        .query(AttendanceSessionOB_.subjectId.oneOf(ids))
+        .build();
+    final all = q.find();
+    q.close();
+    return all;
+  }
+
+  Future<List<Subject>> _remoteSubjects(String userId) async => [
+        for (final j in await _remote.getSubjects(userId))
+          SubjectDto.fromJson(j).toDomain(),
+      ];
+
+  static String _norm(String name) => name.trim().toLowerCase();
+
+  /// Before the server kept the app's ids, it gave every subject a new one, so
+  /// nothing after the create could find it: classes were never uploaded, and
+  /// the server holds an empty copy under an id this phone has never seen.
+  ///
+  /// Uploads every subject and class this phone has (both are idempotent on
+  /// the server now), then deletes server subjects this phone does not have
+  /// that are empty and share a name with one it does — the old copies.
+  Future<void> _repairIds(String userId, List<Subject> remote) async {
+    final local = _localSubjects(userId);
+    final remoteIds = {for (final r in remote) r.id};
+
+    for (final ob in local) {
+      if (!remoteIds.contains(ob.id)) {
+        await _remote
+            .createSubject(SubjectDto.fromDomain(_subjectObToDomain(ob)).toJson());
+      }
+      ob.isSynced = true;
+    }
+    _subjectBox.putMany(local);
+
+    final sessions = _localSessionsFor(local.map((o) => o.id));
+    for (final ob in sessions) {
+      await _remote.logSession(ob.subjectId,
+          AttendanceSessionDto.fromDomain(_sessionObToDomain(ob)).toJson());
+      ob.isSynced = true;
+    }
+    _sessionBox.putMany(sessions);
+
+    final localIds = {for (final o in local) o.id};
+    final localNames = {for (final o in local) _norm(o.name)};
+    for (final r in remote) {
+      if (localIds.contains(r.id) || !localNames.contains(_norm(r.name))) {
+        continue;
+      }
+      if ((await _remote.getSessions(r.id)).isEmpty) {
+        await _remote.deleteSubject(r.id);
+      }
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> pullFromServer(String userId,
+      {bool repairIds = false}) async {
+    try {
+      var remote = await _remoteSubjects(userId);
+      if (repairIds) {
+        await _repairIds(userId, remote);
+        remote = await _remoteSubjects(userId);
+      }
+      final remoteSessions = <AttendanceSession>[
+        for (final s in remote)
+          for (final j in await _remote.getSessions(s.id))
+            AttendanceSessionDto.fromJson(j).toDomain(),
+      ];
+
+      // Subjects
+      final localSubjects = _localSubjects(userId);
+      final subjectPlan = planPull(
+        local: [
+          for (final o in localSubjects)
+            (id: o.id, isSynced: o.isSynced, updatedAt: o.updatedAt),
+        ],
+        remote: [for (final s in remote) (id: s.id, updatedAt: s.updatedAt)],
+        queued: _syncManager.queuedEntityIds('subject'),
+      );
+      _subjectBox.putMany([
+        for (final s in remote)
+          if (subjectPlan.take.contains(s.id))
+            _subjectDomainToOb(s, isSynced: true),
+      ]);
+      _subjectBox.removeMany([
+        for (final o in localSubjects)
+          if (subjectPlan.remove.contains(o.id)) o.obId,
+      ]);
+
+      // Classes, across every subject the account has on either side.
+      final subjectIds = {
+        for (final o in localSubjects) o.id,
+        for (final s in remote) s.id,
+      };
+      final localSessions = _localSessionsFor(subjectIds);
+      final sessionPlan = planPull(
+        local: [
+          for (final o in localSessions)
+            (id: o.id, isSynced: o.isSynced, updatedAt: o.updatedAt),
+        ],
+        remote: [
+          for (final s in remoteSessions) (id: s.id, updatedAt: s.updatedAt),
+        ],
+        queued: _syncManager.queuedEntityIds('attendance_session'),
+      );
+      _sessionBox.putMany([
+        for (final s in remoteSessions)
+          if (sessionPlan.take.contains(s.id))
+            _sessionDomainToOb(s, isSynced: true),
+      ]);
+      _sessionBox.removeMany([
+        for (final o in localSessions)
+          if (sessionPlan.remove.contains(o.id) ||
+              subjectPlan.remove.contains(o.subjectId))
+            o.obId,
+      ]);
+
+      return Right(subjectPlan.take.isNotEmpty ||
+          subjectPlan.remove.isNotEmpty ||
+          sessionPlan.take.isNotEmpty ||
+          sessionPlan.remove.isNotEmpty);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
     }
   }
 }

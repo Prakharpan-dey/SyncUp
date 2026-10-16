@@ -1,7 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fpdart/fpdart.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../core/error/failures.dart';
 import '../../domain/entities/subject.dart';
 import '../../domain/entities/attendance_session.dart';
 import '../../di/attendance_providers.dart';
+import '../../../../core/theme/theme_mode_provider.dart';
+import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../../../tasks/presentation/viewmodels/task_viewmodel.dart' show pullDue;
 
 class AttendanceState {
   final List<Subject> subjects;
@@ -64,7 +70,70 @@ class AttendanceViewModel extends Notifier<AttendanceState> {
   @override
   AttendanceState build() => const AttendanceState(isLoading: true);
 
-  Future<void> loadSubjects(String userId) async {
+  /// Reads the device's subjects, and when signed in also asks the server,
+  /// on the same terms as tasks: with [refresh], on a device with none yet, or
+  /// a few hours after it last asked. Attendance used to be read from the
+  /// device only, so a reinstall or a new phone showed no subjects at all.
+  Future<void> loadSubjects(String userId, {bool refresh = false}) async {
+    await _readLocal(userId);
+
+    final auth = ref.read(authViewModelProvider);
+    if (auth.status != AuthStatus.authenticated || auth.user?.id != userId) {
+      return;
+    }
+    final repaired = _flag(_repairKey(userId));
+    final due = refresh ||
+        !repaired ||
+        state.subjects.isEmpty ||
+        pullDue(_lastPull(userId), DateTime.now());
+    if (!due) return;
+
+    final result = await (_pulling ??= ref
+        .read(attendanceRepositoryProvider)
+        .pullFromServer(userId, repairIds: !repaired)
+        .whenComplete(() => _pulling = null));
+    if (result.isRight()) {
+      _setPrefs((p) {
+        p.setInt(_pullKey(userId), DateTime.now().millisecondsSinceEpoch);
+        p.setBool(_repairKey(userId), true);
+      });
+    }
+    if (result.getOrElse((_) => false)) await _readLocal(userId);
+  }
+
+  /// A pull already under way, shared by Home and Attendance, which both load
+  /// on open.
+  Future<Either<Failure, bool>>? _pulling;
+
+  static String _pullKey(String userId) => 'attendance_last_pull_$userId';
+  static String _repairKey(String userId) => 'attendance_ids_repaired_$userId';
+
+  DateTime? _lastPull(String userId) {
+    try {
+      final ms = ref.read(sharedPrefsProvider).getInt(_pullKey(userId));
+      return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  bool _flag(String key) {
+    try {
+      return ref.read(sharedPrefsProvider).getBool(key) ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  void _setPrefs(void Function(SharedPreferences p) write) {
+    try {
+      write(ref.read(sharedPrefsProvider));
+    } catch (_) {
+      // Worst case the next load asks the server again.
+    }
+  }
+
+  Future<void> _readLocal(String userId) async {
     state = state.copyWith(isLoading: true, error: null);
     final result =
         await ref.read(attendanceRepositoryProvider).getSubjects(userId);

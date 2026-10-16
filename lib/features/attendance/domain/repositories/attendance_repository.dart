@@ -16,4 +16,13 @@ abstract interface class AttendanceRepository {
   Future<Either<Failure, AttendanceSession>> logSession(
       AttendanceSession session);
   Future<Either<Failure, void>> deleteSession(String sessionId);
+
+  /// Brings the account's subjects and classes down from the server.
+  /// Right(true) when the device's copy changed.
+  ///
+  /// [repairIds] runs the one-time repair for installs from before the server
+  /// kept the app's ids: it uploads what only this phone has, then drops the
+  /// empty duplicates the server made back then.
+  Future<Either<Failure, bool>> pullFromServer(String userId,
+      {bool repairIds = false});
 }
