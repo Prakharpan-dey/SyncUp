@@ -321,7 +321,7 @@ class _ToggleTile extends StatelessWidget {
                 color: iconColor,
                 isDark: isDark,
               ),
-              child: Icon(icon, size: 18, color: Colors.white),
+              child: Icon(icon, size: 18, color: AppColors.on(iconColor)),
             ),
             const SizedBox(width: 12),
             Expanded(

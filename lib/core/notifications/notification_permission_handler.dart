@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../theme/app_colors.dart';
 import 'notification_service.dart';
 
 /// Handles the notification permission flow:
@@ -59,7 +60,7 @@ class NotificationPermissionHandler {
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         icon: const Icon(Icons.notifications_rounded,
-            size: 48, color: Color(0xFF6C5CE7)),
+            size: 48, color: AppColors.primary),
         title: const Text('Stay on Track'),
         content: const Text(
           'Get timely reminders for upcoming tasks, attendance warnings, '

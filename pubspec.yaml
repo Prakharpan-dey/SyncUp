@@ -101,6 +101,7 @@ dev_dependencies:
   mocktail: ^1.0.5
   build_runner: ^2.15.0
   flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.7
 
 # Regenerate launcher icons after changing assets/icon/*:
 #   dart run flutter_launcher_icons
@@ -111,8 +112,21 @@ flutter_launcher_icons:
   remove_alpha_ios: true
   # Adaptive icon: the launcher masks the foreground to its own shape, so the
   # mark is inset into the safe zone and the background is a flat brand color.
-  adaptive_icon_background: "#EDEDED"
+  adaptive_icon_background: "#4169FF"
   adaptive_icon_foreground: "assets/icon/icon_foreground.png"
+
+# Native splash: the SyncUp symbol on the brand's off-white (ink in dark mode),
+# matching the in-app splash so the handoff to Flutter does not jump.
+# Regenerate with: dart run flutter_native_splash:create
+flutter_native_splash:
+  color: "#F7F6F0"
+  color_dark: "#171717"
+  image: assets/brand/splash_symbol.png
+  android_12:
+    image: assets/brand/splash_android12.png
+    color: "#F7F6F0"
+    color_dark: "#171717"
+  web: false
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -126,6 +140,9 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
+  assets:
+    - assets/brand/syncup_symbol.svg
+
   # assets:
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg

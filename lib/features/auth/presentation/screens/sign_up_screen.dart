@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/neo_brutalism.dart';
+import '../../../../core/widgets/brand_logo.dart';
 import '../../../../core/utils/validators.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../widgets/password_field.dart';
@@ -64,15 +65,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 48),
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: NeoBrutalism.iconBoxDecoration(
-                    color: AppColors.accent,
-                    isDark: isDark,
-                  ),
-                  child: const Icon(Icons.person_add_rounded,
-                      size: 32, color: Colors.white),
+                // The brand mark, where a generic icon box used to be.
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: SyncUpSymbol(height: 72),
                 ),
                 const SizedBox(height: 24),
                 Text(

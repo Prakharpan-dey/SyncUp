@@ -230,8 +230,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: 0.5,
                                 color: isDark
-                                    ? AppColors.primaryDark
-                                    : AppColors.accent,
+                                    ? AppColors.accent
+                                    : AppColors.primary,
                               ),
                             ),
                           ],
@@ -297,7 +297,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      // Done Today box (teal)
+                      // Done Today box (lime accent)
                       Expanded(
                         child: Container(
                           padding: const EdgeInsets.symmetric(

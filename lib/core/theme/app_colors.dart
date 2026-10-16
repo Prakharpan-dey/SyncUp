@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 
+/// The SyncUp palette, matched to the logo: cobalt and acid lime on warm
+/// off-white, with ink for text, borders and hard shadows.
 class AppColors {
-  // Primary palette
-  static const primary = Color(0xFF6C5CE7);
-  static const primaryLight = Color(0xFFA29BFE);
-  static const primaryDark = Color(0xFF4834D4);
+  // Primary: Cobalt Blue, the logo's top block.
+  static const primary = Color(0xFF4169FF);
+  static const primaryLight = Color(0xFF8DA6FF);
+  static const primaryDark = Color(0xFF2A4FD6);
 
-  // Accent
-  static const accent = Color(0xFF00CEC9);
-  static const accentLight = Color(0xFF81ECEC);
+  // Accent: Acid Lime, the logo's bottom block. Light enough that white on it
+  // is unreadable: put [onAccent] (ink) on it, never white.
+  static const accent = Color(0xFFD7FF38);
+  static const accentLight = Color(0xFFECFF9C);
+  static const onAccent = Color(0xFF171717);
 
   // Neobrutalism feature colors
   static const yellow = Color(0xFFFDAA5D);
@@ -21,21 +25,28 @@ class AppColors {
   static const error = Color(0xFFFF6B6B);
   static const info = Color(0xFF74C0FC);
 
-  // Neutral (Light)
-  static const background = Color(0xFFEDEDED);
+  // Neutral (Light): Warm Off-White ground, Ink Black lines and text.
+  static const background = Color(0xFFF7F6F0);
   static const surface = Color(0xFFFFFFFF);
-  static const surfaceVariant = Color(0xFFEDEDED);
-  static const textPrimary = Color(0xFF000000);
+  static const surfaceVariant = Color(0xFFEFEEE7);
+  static const textPrimary = Color(0xFF171717);
   static const textSecondary = Color(0xFF555555);
   static const textTertiary = Color(0xFF888888);
-  static const border = Color(0xFF000000);
+  static const border = Color(0xFF171717);
 
-  // Neutral (Dark) — inverted neobrutalism
-  static const backgroundDark = Color(0xFF101010);
-  static const surfaceDark = Color(0xFF1A1A1A);
-  static const surfaceVariantDark = Color(0xFF101010);
-  static const textPrimaryDark = Color(0xFFF0F0F0);
+  // Neutral (Dark) — inverted neobrutalism, on the logo's ink.
+  static const backgroundDark = Color(0xFF171717);
+  static const surfaceDark = Color(0xFF222222);
+  static const surfaceVariantDark = Color(0xFF171717);
+  static const textPrimaryDark = Color(0xFFF7F6F0);
   static const textSecondaryDark = Color(0xFF8A8A8A);
-  static const borderDark = Color(0xFFF0F0F0);
-  static const shadowDark = Color(0xFFF0F0F0);
+  static const borderDark = Color(0xFFF7F6F0);
+  static const shadowDark = Color(0xFFF7F6F0);
+
+  /// Ink or white, whichever reads on [background]. For fills chosen at
+  /// runtime (setting tiles, notification icons) where the colour can be lime.
+  static Color on(Color background) =>
+      ThemeData.estimateBrightnessForColor(background) == Brightness.dark
+          ? Colors.white
+          : onAccent;
 }

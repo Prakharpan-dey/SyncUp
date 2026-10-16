@@ -202,7 +202,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                     isDark: isDark,
                   ),
                   child: const Icon(Icons.groups_rounded,
-                      color: Colors.white, size: 32),
+                      color: AppColors.onAccent, size: 32),
                 ),
                 const SizedBox(height: 12),
                 Text(

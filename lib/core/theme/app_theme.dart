@@ -66,6 +66,9 @@ class AppTheme {
         brightness: Brightness.light,
         primary: AppColors.primary,
         secondary: AppColors.accent,
+        // Pinned: the seed would derive these, and white on lime is unreadable.
+        onPrimary: Colors.white,
+        onSecondary: AppColors.onAccent,
         surface: AppColors.surface,
         error: AppColors.error,
       ),
@@ -327,6 +330,9 @@ class AppTheme {
         brightness: Brightness.dark,
         primary: AppColors.primary,
         secondary: AppColors.accent,
+        // Pinned: the seed would derive these, and white on lime is unreadable.
+        onPrimary: Colors.white,
+        onSecondary: AppColors.onAccent,
         surface: AppColors.surfaceDark,
         error: AppColors.error,
       ),

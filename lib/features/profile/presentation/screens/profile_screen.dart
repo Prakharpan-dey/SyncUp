@@ -679,7 +679,7 @@ class _SettingsTile extends StatelessWidget {
                   color: iconColor,
                   isDark: isDark,
                 ),
-                child: Icon(icon, size: 20, color: Colors.white),
+                child: Icon(icon, size: 20, color: AppColors.on(iconColor)),
               ),
               const SizedBox(width: 12),
               Expanded(

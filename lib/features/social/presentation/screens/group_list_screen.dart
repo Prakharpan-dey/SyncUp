@@ -239,7 +239,7 @@ class _GroupListScreenState extends ConsumerState<GroupListScreen> {
                               ),
                               child: const Icon(
                                 Icons.group_rounded,
-                                color: Colors.white,
+                                color: AppColors.onAccent,
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -310,7 +310,7 @@ class _GroupListScreenState extends ConsumerState<GroupListScreen> {
               child: const Icon(
                 Icons.groups_rounded,
                 size: 48,
-                color: Colors.white,
+                color: AppColors.onAccent,
               ),
             ),
             const SizedBox(height: 24),

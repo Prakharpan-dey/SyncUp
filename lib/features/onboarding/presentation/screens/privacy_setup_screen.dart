@@ -39,7 +39,7 @@ class _PrivacySetupScreenState extends ConsumerState<PrivacySetupScreen> {
                   isDark: isDark,
                 ),
                 child: const Icon(Icons.shield_rounded,
-                    size: 32, color: Colors.white),
+                    size: 32, color: AppColors.onAccent),
               ),
               const SizedBox(height: 24),
               Text(

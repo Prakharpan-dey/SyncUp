@@ -112,7 +112,7 @@ class NotificationCard extends StatelessWidget {
                   color: _iconColor,
                   isDark: isDark,
                 ),
-                child: Icon(_icon, size: 20, color: Colors.white),
+                child: Icon(_icon, size: 20, color: AppColors.on(_iconColor)),
               ),
               const SizedBox(width: 12),
               Expanded(
